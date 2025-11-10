@@ -6,22 +6,22 @@ const { ErrorFactory } = require('../utils/errors.util');
 // Simulación de base de datos (reemplazar con Prisma/BD real)
 const MOCK_USERS = [
   {
-    id: 'usr_12345',
-    nombre: 'Carlos Ávila',
-    email: 'padre@ejemplo.com',
+    id: 'mthr_alumno01',
+    nombre: 'Gerardo y Ximena',
+    email: 'padres@ejemplo.com',
     password: '$2a$10$X2YZ3ABC...',  // "Password123!" hasheado
-    rol: 'padre'
+    rol: 'padres'
   },
   {
-    id: 'usr_67890',
+    id: 'tchr_12345',
     nombre: 'María González',
     email: 'docente@escuela.edu.mx',
     password: '$2a$10$X2YZ3ABC...',  // "Password123!" hasheado
     rol: 'docente'
   },
   {
-    id: 'usr_alumno01',
-    nombre: 'Juan Pérez',
+    id: 'stdnt_alumno01',
+    nombre: 'Emma Hernandez',
     email: 'alumno@ejemplo.com',
     password: '$2a$10$X2YZ3ABC...',  // "Password123!" hasheado
     rol: 'alumno'
@@ -151,5 +151,6 @@ module.exports = {
   login,
   logout,
   refreshToken,
-  getCurrentUser
+  getCurrentUser,
+  MOCK_USERS, // Exportar para que otros controladores puedan usarlo
 };

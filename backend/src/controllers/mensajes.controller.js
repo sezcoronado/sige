@@ -1,19 +1,15 @@
 // src/controllers/mensajes.controller.js
 const { ErrorFactory } = require('../utils/errors.util');
 
-// Mock de usuarios (para referencias)
-const MOCK_USUARIOS = [
-  { id: 'usr_12345', nombre: 'Carlos Ávila', rol: 'padre' },
-  { id: 'usr_67890', nombre: 'María González', rol: 'docente' },
-  { id: 'usr_alumno01', nombre: 'Juan Pérez', rol: 'alumno' }
-];
+// Importar usuarios desde el controlador de autenticación para mantener consistencia
+const { MOCK_USERS } = require('./auth.controller');
 
 // Mock de mensajes
 let MOCK_MENSAJES = [
   {
     id: 'msg_30012',
-    remitenteId: 'usr_12345',
-    destinatariosIds: ['usr_67890'],
+    remitenteId: 'mthr_alumno01', // ID de padres
+    destinatariosIds: ['tchr_12345'], // ID de docente
     asunto: 'Consulta sobre tarea de matemáticas',
     contenido: 'Buenos días, quisiera saber si la tarea debe incluir gráficas o solo los ejercicios resueltos.',
     leido: false,
@@ -22,8 +18,8 @@ let MOCK_MENSAJES = [
   },
   {
     id: 'msg_30013',
-    remitenteId: 'usr_67890',
-    destinatariosIds: ['usr_12345'],
+    remitenteId: 'tchr_12345', // ID de docente
+    destinatariosIds: ['mthr_alumno01'], // ID de padres
     asunto: 'Re: Consulta sobre tarea de matemáticas',
     contenido: 'Buen día. La tarea debe incluir tanto los ejercicios como las gráficas correspondientes. Saludos.',
     leido: true,
@@ -61,9 +57,9 @@ const getMensajes = async (req, res, next) => {
 
     // Enriquecer con información de usuarios
     const mensajesEnriquecidos = mensajes.map(m => {
-      const remitente = MOCK_USUARIOS.find(u => u.id === m.remitenteId);
+      const remitente = MOCK_USERS.find(u => u.id === m.remitenteId);
       const destinatarios = m.destinatariosIds.map(id => 
-        MOCK_USUARIOS.find(u => u.id === id)
+        MOCK_USERS.find(u => u.id === id)
       );
 
       return {
@@ -123,7 +119,7 @@ const enviarMensaje = async (req, res, next) => {
 
     // Verificar que todos los destinatarios existan
     for (const destId of destinatariosIds) {
-      const usuario = MOCK_USUARIOS.find(u => u.id === destId);
+      const usuario = MOCK_USERS.find(u => u.id === destId);
       if (!usuario) {
         throw ErrorFactory.notFound(`Usuario destinatario ${destId}`);
       }
@@ -144,9 +140,9 @@ const enviarMensaje = async (req, res, next) => {
     MOCK_MENSAJES.push(nuevoMensaje);
 
     // Enriquecer respuesta
-    const remitente = MOCK_USUARIOS.find(u => u.id === remitenteId);
+    const remitente = MOCK_USERS.find(u => u.id === remitenteId);
     const destinatarios = destinatariosIds.map(id => 
-      MOCK_USUARIOS.find(u => u.id === id)
+      MOCK_USERS.find(u => u.id === id)
     );
 
     const mensajeRespuesta = {
@@ -187,9 +183,9 @@ const getMensajeById = async (req, res, next) => {
     }
 
     // Enriquecer con información de usuarios
-    const remitente = MOCK_USUARIOS.find(u => u.id === mensaje.remitenteId);
+    const remitente = MOCK_USERS.find(u => u.id === mensaje.remitenteId);
     const destinatarios = mensaje.destinatariosIds.map(id => 
-      MOCK_USUARIOS.find(u => u.id === id)
+      MOCK_USERS.find(u => u.id === id)
     );
 
     const mensajeEnriquecido = {
@@ -236,9 +232,9 @@ const marcarLeido = async (req, res, next) => {
     mensaje.fechaLectura = leido ? new Date().toISOString() : null;
 
     // Enriquecer respuesta
-    const remitente = MOCK_USUARIOS.find(u => u.id === mensaje.remitenteId);
+    const remitente = MOCK_USERS.find(u => u.id === mensaje.remitenteId);
     const destinatarios = mensaje.destinatariosIds.map(id => 
-      MOCK_USUARIOS.find(u => u.id === id)
+      MOCK_USERS.find(u => u.id === id)
     );
 
     const mensajeRespuesta = {

@@ -26,7 +26,7 @@ const DashboardPage: React.FC = () => {
       ),
       path: '/cartera',
       color: 'bg-green-500',
-      roles: ['padre', 'alumno'],
+      roles: ['padres', 'alumno'],
     },
     {
       title: 'Tienda Escolar',
@@ -38,7 +38,7 @@ const DashboardPage: React.FC = () => {
       ),
       path: '/tienda',
       color: 'bg-blue-500',
-      roles: ['alumno', 'padre'], // Added 'padre' for visibility
+      roles: ['alumno', 'padres'], // Added 'padres' for visibility
     },
     {
       title: 'Tareas Académicas',
@@ -50,7 +50,7 @@ const DashboardPage: React.FC = () => {
       ),
       path: '/tareas',
       color: 'bg-purple-500',
-      roles: ['alumno', 'docente', 'padre'], // Added 'padre' for visibility
+      roles: ['alumno', 'docente', 'padres'], // Added 'padres' for visibility
     },
     {
       title: 'Mensajería',
@@ -62,7 +62,7 @@ const DashboardPage: React.FC = () => {
       ),
       path: '/mensajes',
       color: 'bg-indigo-500',
-      roles: ['padre', 'docente', 'alumno'],
+      roles: ['padres', 'docente', 'alumno'],
     },
   ];
 

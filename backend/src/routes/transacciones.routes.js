@@ -23,8 +23,20 @@ router.get(
 router.get(
   '/restricciones',
   authenticateToken,
-  authorize('padre', 'alumno'),
+  authorize('padres', 'alumno'),
   transaccionesController.getRestricciones
+);
+
+/**
+ * @route   PUT /api/v1/transacciones/restricciones
+ * @desc    Actualizar las restricciones de un alumno
+ * @access  Private (padre)
+ */
+router.put(
+  '/restricciones',
+  authenticateToken,
+  authorize('padres'),
+  transaccionesController.actualizarRestricciones
 );
 
 /**
@@ -47,7 +59,7 @@ router.post(
 router.get(
   '/',
   authenticateToken,
-  authorize('padre', 'alumno'),
+  authorize('padres', 'alumno'),
   transaccionesController.getTransacciones
 );
 

@@ -36,7 +36,7 @@ const TareasPage: React.FC = () => {
       const usuario = authService.getUsuarioLocal();
       setLoading(true);
       setError(null);
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
+      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
       const estado = filtro === 'todas' ? undefined : filtro;
       const data = await tareasService.getTareas(alumnoId, estado);
       setTareas(data.items);

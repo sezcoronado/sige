@@ -1,6 +1,7 @@
 // src/pages/TiendaPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import carteraService, { Cartera } from '../api/services/cartera.service';
 import transaccionesService, { Producto, ItemTransaccion } from '../api/services/transacciones.service';
 import authService from '../api/services/auth.service';
 import Card from '../components/common/Card';
@@ -16,6 +17,8 @@ const TiendaPage: React.FC = () => {
   const navigate = useNavigate();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
+  const [cartera, setCartera] = useState<Cartera | null>(null);
+  const [nombreAlumno, setNombreAlumno] = useState<string>('');
   const [restricciones, setRestricciones] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [comprando, setComprando] = useState(false);
@@ -42,9 +45,19 @@ const TiendaPage: React.FC = () => {
       setProductos(productosData.items);
 
       // Cargar restricciones
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
+      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
       const restriccionesData = await transaccionesService.getRestricciones(alumnoId);
       const idsRestringidos = restriccionesData.items.map(r => r.productoId);
+
+      // Cargar saldo de cartera
+      const carteraData = await carteraService.getSaldo(alumnoId);
+      setCartera(carteraData);
+
+      // Si el usuario es padre, obtener el nombre del alumno
+      if (usuario?.rol === 'padres') {
+        const infoAlumno = await authService.getUserById(alumnoId);
+        setNombreAlumno(infoAlumno.nombre.split(' ')[0]);
+      }
       setRestricciones(idsRestringidos);
     } catch (err: any) {
       setError(err.message);
@@ -102,7 +115,7 @@ const TiendaPage: React.FC = () => {
 
     try {
       const usuario = authService.getUsuarioLocal();
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
+      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
       const items = carrito.map(item => ({
         productoId: item.productoId,
         cantidad: item.cantidad,
@@ -125,6 +138,30 @@ const TiendaPage: React.FC = () => {
     }
   };
 
+  const handleToggleRestriccion = async (productoId: string, restringir: boolean) => {
+    const usuario = authService.getUsuarioLocal();
+    if (usuario?.rol !== 'padres') return;
+
+    // Actualización optimista de la UI
+    const nuevasRestricciones = restringir
+      ? [...restricciones, productoId]
+      : restricciones.filter(id => id !== productoId);
+    setRestricciones(nuevasRestricciones);
+
+    try {
+      const alumnoId = 'stdnt_alumno01'; // En una app real, se obtendría el hijo asociado al padre
+      await transaccionesService.updateRestricciones({
+        alumnoId,
+        productoId,
+        restringir,
+      });
+    } catch (err: any) {
+      setError(err.message);
+      // Revertir en caso de error
+      setRestricciones(restricciones);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -132,6 +169,8 @@ const TiendaPage: React.FC = () => {
       </div>
     );
   }
+
+  const usuario = authService.getUsuarioLocal();
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -141,7 +180,7 @@ const TiendaPage: React.FC = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Tienda Escolar</h1>
             <div className="flex items-center gap-4">
-              {/* Badge del carrito */}
+              {usuario?.rol === 'alumno' && (
               <div className="relative">
                 <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -152,6 +191,7 @@ const TiendaPage: React.FC = () => {
                   </span>
                 )}
               </div>
+              )}
               <Button variant="secondary" onClick={() => navigate('/dashboard')}>
                 Volver
               </Button>
@@ -176,7 +216,14 @@ const TiendaPage: React.FC = () => {
               </div>
             )}
 
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Productos Disponibles</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Productos Disponibles</h2>
+              {usuario?.rol === 'padres' && (
+                <p className="text-sm text-gray-600">
+                  Gestiona las restricciones para {nombreAlumno}.
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {productos.map(producto => {
                 const esRestringido = restricciones.includes(producto.id);
@@ -199,19 +246,36 @@ const TiendaPage: React.FC = () => {
                             Stock: {producto.stock}
                           </span>
                         </div>
-                        {esRestringido ? (
-                          <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                            🚫 Restringido
-                          </span>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => agregarAlCarrito(producto)}
-                            disabled={producto.stock === 0}
-                          >
-                            Agregar
-                          </Button>
+                        {usuario?.rol === 'alumno' && (
+                          esRestringido ? (
+                            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                              🚫 Restringido
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={() => agregarAlCarrito(producto)}
+                              disabled={producto.stock === 0}
+                            >
+                              Agregar
+                            </Button>
+                          )
+                        )}
+                        {usuario?.rol === 'padres' && (
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-medium ${esRestringido ? 'text-red-600' : 'text-gray-500'}`}>
+                              {esRestringido ? 'Restringido' : 'Permitido'}
+                            </span>
+                            <button
+                              onClick={() => handleToggleRestriccion(producto.id, !esRestringido)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                esRestringido ? 'bg-red-500' : 'bg-gray-300'
+                              }`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${esRestringido ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -224,6 +288,13 @@ const TiendaPage: React.FC = () => {
           {/* Carrito */}
           <div className="lg:col-span-1">
             <Card title="Carrito de Compras" className="sticky top-24">
+              {cartera !== null && (
+                <div className="flex justify-between items-center text-sm mb-4 pb-4 border-b border-gray-200 text-gray-600">
+                  <span>Saldo disponible:</span>
+                  <span className="font-medium">${cartera.saldo.toFixed(2)}</span>
+                </div>
+              )}
+
               {carrito.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,14 +337,21 @@ const TiendaPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button
-                    variant="success"
-                    fullWidth
-                    loading={comprando}
-                    onClick={realizarCompra}
-                  >
-                    {comprando ? 'Procesando...' : 'Finalizar Compra'}
-                  </Button>
+                  {authService.getUsuarioLocal()?.rol === 'alumno' ? (
+                    <Button
+                      variant="success"
+                      fullWidth
+                      loading={comprando}
+                      onClick={realizarCompra}
+                    >
+                      {comprando ? 'Procesando...' : 'Finalizar Compra'}
+                    </Button>
+                  ) : (
+                    <div className="text-center text-sm text-gray-500 p-3 bg-gray-100 rounded-lg">
+                      <p>Solo los alumnos pueden finalizar compras.</p>
+                    </div>
+                  )}
+
                 </>
               )}
             </Card>

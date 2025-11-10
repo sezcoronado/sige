@@ -74,6 +74,23 @@ class AuthService {
   }
 
   /**
+   * Obtener información de un usuario por su ID.
+   * NOTA: Este endpoint no existe en el backend actual.
+   * Se simula la respuesta para obtener el nombre del alumno.
+   */
+  async getUserById(userId: string): Promise<Usuario> {
+    // En una implementación real, aquí se llamaría a un endpoint como GET /api/v1/users/${userId}
+    // Por ahora, devolvemos un mock del usuario alumno para que la UI funcione.
+    const MOCK_ALUMNO = {
+      id: 'stdnt_alumno01',
+      nombre: 'Emma Hernandez',
+      email: 'alumno@ejemplo.com',
+      rol: 'alumno'
+    };
+    return Promise.resolve(MOCK_ALUMNO);
+  }
+
+  /**
    * Verificar si el usuario está autenticado
    */
   isAuthenticated(): boolean {

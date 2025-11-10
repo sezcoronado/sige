@@ -68,14 +68,14 @@ const MensajesPage: React.FC = () => {
     try {
       // En producción, buscar el ID del destinatario por email/nombre
       // Por ahora usamos IDs mock
-      const destinatarioMap: { [key: string]: string } = {
-        'padre': 'usr_12345',
-        'docente': 'usr_67890',
-        'alumno': 'usr_alumno01',
+      const destinatarioMap: { [key: string]: string | undefined } = {
+        'padres': 'mthr_alumno01', // ID del usuario 'padres'
+        'docente': 'tchr_12345',   // ID del docente
+        'alumno': 'stdnt_alumno01',  // ID del alumno
       };
 
-      const destId = destinatarioMap[nuevoMensaje.destinatario] || 'usr_67890';
-
+      const destId = destinatarioMap[nuevoMensaje.destinatario];
+      if (!destId) throw new Error('Destinatario inválido');
       await mensajesService.enviarMensaje({
         destinatariosIds: [destId],
         asunto: nuevoMensaje.asunto,
@@ -258,7 +258,7 @@ const MensajesPage: React.FC = () => {
                   required
                 >
                   <option value="">Seleccionar...</option>
-                  <option value="padre">Padre</option>
+                  <option value="padres">Padres</option>
                   <option value="docente">Docente</option>
                   <option value="alumno">Alumno</option>
                 </select>

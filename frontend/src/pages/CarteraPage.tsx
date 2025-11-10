@@ -1,7 +1,7 @@
 // src/pages/CarteraPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import carteraService, { Cartera, DepositoRequest } from '../api/services/cartera.service';
+import carteraService, { Cartera, DepositoRequest, Transaccion as TransaccionCartera } from '../api/services/cartera.service';
 import authService from '../api/services/auth.service';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -12,6 +12,8 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 const CarteraPage: React.FC = () => {
   const navigate = useNavigate();
   const [cartera, setCartera] = useState<Cartera | null>(null);
+  const [historial, setHistorial] = useState<TransaccionCartera[]>([]);
+  const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -36,9 +38,11 @@ const CarteraPage: React.FC = () => {
         setLoading(true);
         setError(null);
         // En producción, el alumnoId vendría del contexto o del usuario actual
-        const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
+        const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
         const data = await carteraService.getSaldo(alumnoId);
+        const historialData = await carteraService.getHistorial(alumnoId);
         setCartera(data);
+        setHistorial(historialData.items);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -62,7 +66,7 @@ const CarteraPage: React.FC = () => {
         throw new Error('El monto debe ser un número positivo');
       }
 
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
+      const alumnoId = 'stdnt_alumno01'; // El padre siempre deposita al alumno asociado
       const depositoData: DepositoRequest = {
         alumnoId,
         monto,
@@ -70,9 +74,12 @@ const CarteraPage: React.FC = () => {
       };
 
       const response = await carteraService.depositar(depositoData);
+      const historialData = await carteraService.getHistorial(alumnoId);
+
       setCartera(response.cartera);
       setSuccess(`Depósito de $${monto.toFixed(2)} realizado exitosamente`);
       setShowDepositForm(false);
+      setHistorial(historialData.items);
       setDepositoForm({ monto: '', metodoPago: 'tarjeta' });
     } catch (err: any) {
       setError(err.message);
@@ -139,7 +146,7 @@ const CarteraPage: React.FC = () => {
         </Card>
 
         {/* Acciones */}
-        {authService.getUsuarioLocal()?.rol === 'padre' &&
+        {authService.getUsuarioLocal()?.rol === 'padres' &&
           <Card className="mb-6">
             <div className="flex justify-between items-center">
               <div>
@@ -218,6 +225,78 @@ const CarteraPage: React.FC = () => {
             )}
           </Card>
         }
+
+        {/* Historial de Transacciones */}
+        <Card>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de Movimientos</h3>
+          {historial.length === 0 ? (
+            <p className="text-sm text-gray-500">No hay movimientos recientes.</p>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {historial.map(tx => (
+                <li key={tx.id} className="py-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        tx.tipo === 'deposito' ? 'bg-green-100' : 'bg-red-100'
+                      }`}>
+                        {tx.tipo === 'deposito' ? (
+                          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                        ) : (
+                          <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{tx.descripcion}</p>
+                        <p className="text-xs text-gray-500">{new Date(tx.fecha).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${
+                          tx.tipo === 'deposito' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {tx.tipo === 'deposito' ? '+' : ''}${Math.abs(tx.monto).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Saldo: ${tx.saldoNuevo.toFixed(2)}
+                        </p>
+                      </div>
+                      {tx.tipo === 'compra' && tx.items && tx.items.length > 0 && (
+                        <button
+                          onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}
+                          className="p-1 rounded-full hover:bg-gray-100"
+                        >
+                          <svg className={`w-5 h-5 text-gray-500 transition-transform ${expandedTx === tx.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Desglose de la transacción */}
+                  {expandedTx === tx.id && tx.items && (
+                    <div className="mt-3 ml-12 pl-4 border-l-2 border-gray-200">
+                      <h4 className="text-xs font-semibold text-gray-700 mb-2">Detalle de la compra:</h4>
+                      <ul className="space-y-1 text-xs">
+                        {tx.items.map(item => (
+                          <li key={item.productoId} className="flex justify-between">
+                            <span className="text-gray-600">
+                              {item.nombreProducto} (x{item.cantidad})
+                            </span>
+                            <span className="font-medium text-gray-800">
+                              ${item.subtotal.toFixed(2)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
 
         {/* Información Adicional */}
         <Card>

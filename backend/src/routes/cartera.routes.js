@@ -12,7 +12,7 @@ const { authenticateToken, authorize } = require('../middlewares/auth.middleware
 router.get(
   '/',
   authenticateToken,
-  authorize('padre', 'alumno'),
+  authorize('padres', 'alumno'),
   carteraController.getSaldo
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.post(
   '/depositar',
   authenticateToken,
-  authorize('padre'),
+  authorize('padres'),
   carteraController.depositar
 );
 
@@ -36,7 +36,7 @@ router.post(
 router.get(
   '/historial',
   authenticateToken,
-  authorize('padre', 'alumno'),
+  authorize('padres', 'alumno'),
   carteraController.getHistorial
 );
 

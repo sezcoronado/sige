@@ -4,7 +4,7 @@ const { ErrorFactory } = require('../utils/errors.util');
 // Mock de tareas
 let MOCK_TAREAS = [
   {
-    id: 'tsk_5001',
+    id: 'tsk_001',
     titulo: 'Problemas de fracciones',
     descripcion: 'Resolver los ejercicios 1-15 del libro página 45',
     materia: 'Matemáticas',
@@ -18,7 +18,7 @@ let MOCK_TAREAS = [
     fechaEntregaAlumno: null
   },
   {
-    id: 'tsk_5002',
+    id: 'tsk_002',
     titulo: 'Investigación sobre el sistema solar',
     descripcion: 'Realizar investigación de 2 páginas sobre los planetas',
     materia: 'Ciencias Naturales',
@@ -30,7 +30,105 @@ let MOCK_TAREAS = [
     comentarioDocente: null,
     archivoEntrega: 'uploads/tareas/tarea-1234567890-sistema-solar.pdf',
     fechaEntregaAlumno: '2025-11-02T18:30:00Z'
-  }
+  },
+  {
+    id: 'tsk_003',
+    titulo: 'Ensayo sobre "Cien años de soledad"',
+    descripcion: 'Escribir un ensayo de 3 páginas analizando los temas principales de la novela.',
+    materia: 'Español',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-10-20T08:00:00Z',
+    fechaEntrega: '2025-11-10T23:59:59Z',
+    estado: 'pendiente',
+    calificacion: null,
+    comentarioDocente: null,
+    archivoEntrega: null,
+    fechaEntregaAlumno: null
+  },
+  {
+    id: 'tsk_004',
+    titulo: 'Línea de tiempo de la Revolución Mexicana',
+    descripcion: 'Crear una línea de tiempo visual con los 10 eventos más importantes de la Revolución Mexicana.',
+    materia: 'Historia',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-11-01T08:00:00Z',
+    fechaEntrega: '2025-11-15T23:59:59Z',
+    estado: 'pendiente',
+    calificacion: null,
+    comentarioDocente: null,
+    archivoEntrega: null,
+    fechaEntregaAlumno: null
+  },
+  {
+    id: 'tsk_005',
+    titulo: 'Dibujo a lápiz de un bodegón',
+    descripcion: 'Realizar un dibujo a lápiz de un bodegón con al menos 3 frutas, prestando atención a luces y sombras.',
+    materia: 'Arte',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-10-29T08:00:00Z',
+    fechaEntrega: '2025-11-08T23:59:59Z',
+    estado: 'entregada',
+    calificacion: null,
+    comentarioDocente: null,
+    archivoEntrega: 'uploads/tareas/tarea-bodegon.jpg',
+    fechaEntregaAlumno: '2025-11-07T15:00:00Z'
+  },
+  {
+    id: 'tsk_006',
+    titulo: 'Ejercicios de Álgebra',
+    descripcion: 'Resolver la hoja de ejercicios de ecuaciones de segundo grado.',
+    materia: 'Matemáticas',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-10-15T08:00:00Z',
+    fechaEntrega: '2025-10-22T23:59:59Z',
+    estado: 'calificada',
+    calificacion: 95,
+    comentarioDocente: 'Excelente trabajo, muy bien resueltos los problemas. Sigue así.',
+    archivoEntrega: 'uploads/tareas/tarea-algebra.pdf',
+    fechaEntregaAlumno: '2025-10-21T20:00:00Z'
+  },
+  {
+    id: 'tsk_007',
+    titulo: 'Reporte de laboratorio: La célula',
+    descripcion: 'Elaborar un reporte del laboratorio sobre la observación de células animales y vegetales.',
+    materia: 'Ciencias Naturales',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-10-18T08:00:00Z',
+    fechaEntrega: '2025-10-25T23:59:59Z',
+    estado: 'calificada',
+    calificacion: 80,
+    comentarioDocente: 'Buen reporte, pero faltó detallar más las conclusiones y citar las fuentes correctamente.',
+    archivoEntrega: 'uploads/tareas/tarea-celula.docx',
+    fechaEntregaAlumno: '2025-10-25T10:15:00Z'
+  },
+  {
+    id: 'tsk_008',
+    titulo: 'Análisis de un poema de Octavio Paz',
+    descripcion: 'Leer el poema "Piedra de Sol" y escribir un análisis de una página sobre su estructura y significado.',
+    materia: 'Español',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-11-04T08:00:00Z',
+    fechaEntrega: '2025-11-12T23:59:59Z',
+    estado: 'pendiente',
+    calificacion: null,
+    comentarioDocente: null,
+    archivoEntrega: null,
+    fechaEntregaAlumno: null
+  },
+  {
+    id: 'tsk_009',
+    titulo: 'Resumen del descubrimiento de América',
+    descripcion: 'Escribir un resumen de 500 palabras sobre los viajes de Cristóbal Colón y el descubrimiento de América.',
+    materia: 'Historia',
+    docenteId: 'usr_67890',
+    fechaAsignacion: '2025-10-27T08:00:00Z',
+    fechaEntrega: '2025-11-04T23:59:59Z',
+    estado: 'entregada',
+    calificacion: null,
+    comentarioDocente: null,
+    archivoEntrega: 'uploads/tareas/tarea-colon.pdf',
+    fechaEntregaAlumno: '2025-11-03T22:00:00Z'
+  },
 ];
 
 /**

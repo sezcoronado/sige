@@ -22,6 +22,14 @@ export interface DepositoResponse {
   transaccion: Transaccion;
 }
 
+export interface ItemDetalle {
+  productoId: string;
+  nombreProducto: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
 export interface Transaccion {
   id: string;
   carteraId: string;
@@ -31,6 +39,8 @@ export interface Transaccion {
   saldoNuevo: number;
   descripcion: string;
   fecha: string;
+  referenciaId?: string;
+  items?: ItemDetalle[];
 }
 
 export interface HistorialResponse {

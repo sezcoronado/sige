@@ -5,7 +5,7 @@ const { ErrorFactory } = require('../utils/errors.util');
 let MOCK_CARTERAS = [
   {
     id: 'wlt_22001',
-    alumnoId: 'usr_alumno01',
+    alumnoId: 'stdnt_alumno01',
     saldo: 250.75,
     moneda: 'MXN',
     limiteGastoSemanal: 500.00,
@@ -189,5 +189,7 @@ const getHistorial = async (req, res, next) => {
 module.exports = {
   getSaldo,
   depositar,
-  getHistorial
+  getHistorial,
+  MOCK_CARTERAS, // Exportar para que otros controladores puedan modificarlo
+  MOCK_TRANSACCIONES_CARTERA, // Exportar para que otros controladores puedan modificarlo
 };

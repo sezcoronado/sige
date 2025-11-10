@@ -31,6 +31,12 @@ export interface TransaccionRequest {
   items: ItemTransaccion[];
 }
 
+export interface UpdateRestriccionesRequest {
+  alumnoId: string;
+  productoId: string;
+  restringir: boolean;
+}
+
 export interface TransaccionResponse {
   mensaje: string;
   transaccion: {
@@ -137,6 +143,21 @@ class TransaccionesService {
       const response = await apiClient.get<TransaccionesResponse>(
         '/transacciones',
         { params: { alumnoId, page, pageSize } }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Actualizar las restricciones de un alumno
+   */
+  async updateRestricciones(data: UpdateRestriccionesRequest): Promise<{ mensaje: string }> {
+    try {
+      const response = await apiClient.put<{ mensaje: string }>(
+        '/transacciones/restricciones',
+        data
       );
       return response.data;
     } catch (error: any) {
