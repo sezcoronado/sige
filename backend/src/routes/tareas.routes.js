@@ -12,8 +12,16 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/tareas/');
   },
   filename: function (req, file, cb) {
+    // req.user es añadido por el middleware authenticateToken
+    const usuario = req.user;
+    if (!usuario || !usuario.nombre) {
+      // Si no hay usuario o nombre, usar el nombre por defecto para evitar errores
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      return cb(null, 'tarea-' + uniqueSuffix + path.extname(file.originalname));
+    }
+    const nombreAlumno = usuario.nombre.replace(/\s+/g, '_'); // Reemplazar espacios con guiones bajos
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'tarea-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `${nombreAlumno}_tarea-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 

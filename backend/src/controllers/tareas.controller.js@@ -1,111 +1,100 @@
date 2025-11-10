@@ -1,9 +1,7 @@
 // src/controllers/tareas.controller.js
 const { ErrorFactory } = require('../utils/errors.util');
-const { MOCK_USERS } = require('./auth.controller');
 
-
-// Mock de tareas
+// Mock de Tareas (Asignaciones)
 let MOCK_TAREAS = [
   {
     id: 'tsk_001',
@@ -83,111 +81,63 @@ let MOCK_TAREAS = [
     descripcion: 'Escribir un resumen de 500 palabras sobre los viajes de Cristóbal Colón y el descubrimiento de América.',
     materia: 'Historia',
     docenteId: 'tchr_12345',
-    // Fecha de entrega pasada para probar estado "vencida"
-    fechaAsignacion: '2024-10-27T08:00:00Z',
-    fechaEntrega: '2024-11-04T23:59:59Z',
+    fechaAsignacion: '2025-10-27T08:00:00Z',
+    fechaEntrega: '2025-11-04T23:59:59Z',
   },
 ];
 
-// Mock de Entregas (Submissions) - Esta variable se había eliminado por error.
+// Mock de Entregas (Submissions)
 let MOCK_ENTREGAS = [
-  // Entregas Alumno 1 (Emma Hernandez)
-  { id: 'ent_001', tareaId: 'tsk_002', alumnoId: 'stdnt_alumno01', estado: 'entregada', archivoEntrega: 'uploads/tareas/tarea-sistemasolar-emma.pdf', fechaEntregaAlumno: '2025-11-02T18:30:00Z', calificacion: null, comentarioDocente: null },
-  { id: 'ent_002', tareaId: 'tsk_005', alumnoId: 'stdnt_alumno01', estado: 'entregada', archivoEntrega: 'uploads/tareas/tarea-bodegon-emma.jpg', fechaEntregaAlumno: '2025-11-07T15:00:00Z', calificacion: null, comentarioDocente: null },
-  { id: 'ent_003', tareaId: 'tsk_006', alumnoId: 'stdnt_alumno01', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-algebra-emma.pdf', fechaEntregaAlumno: '2025-10-21T20:00:00Z', calificacion: 95, comentarioDocente: 'Excelente trabajo, muy bien resueltos los problemas. Sigue así.' },
-  { id: 'ent_004', tareaId: 'tsk_007', alumnoId: 'stdnt_alumno01', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-celula-emma.docx', fechaEntregaAlumno: '2025-10-25T10:15:00Z', calificacion: 80, comentarioDocente: 'Buen reporte, pero faltó detallar más las conclusiones y citar las fuentes correctamente.' },
-  // Entregas Alumno 2 (Mateo Rodríguez)
+  // Entregas Alumno 1
+  { id: 'ent_001', tareaId: 'tsk_002', alumnoId: 'stdnt_alumno01', estado: 'entregada', archivoEntrega: 'uploads/tareas/tarea-1234567890-sistema-solar.pdf', fechaEntregaAlumno: '2025-11-02T18:30:00Z', calificacion: null, comentarioDocente: null },
+  { id: 'ent_002', tareaId: 'tsk_005', alumnoId: 'stdnt_alumno01', estado: 'entregada', archivoEntrega: 'uploads/tareas/tarea-bodegon.jpg', fechaEntregaAlumno: '2025-11-07T15:00:00Z', calificacion: null, comentarioDocente: null },
+  { id: 'ent_003', tareaId: 'tsk_006', alumnoId: 'stdnt_alumno01', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-algebra.pdf', fechaEntregaAlumno: '2025-10-21T20:00:00Z', calificacion: 95, comentarioDocente: 'Excelente trabajo, muy bien resueltos los problemas. Sigue así.' },
+  { id: 'ent_004', tareaId: 'tsk_007', alumnoId: 'stdnt_alumno01', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-celula.docx', fechaEntregaAlumno: '2025-10-25T10:15:00Z', calificacion: 80, comentarioDocente: 'Buen reporte, pero faltó detallar más las conclusiones y citar las fuentes correctamente.' },
+  { id: 'ent_005', tareaId: 'tsk_009', alumnoId: 'stdnt_alumno01', estado: 'entregada', archivoEntrega: 'uploads/tareas/tarea-colon.pdf', fechaEntregaAlumno: '2025-11-03T22:00:00Z', calificacion: null, comentarioDocente: null },
+  // Entregas Alumno 2
   { id: 'ent_006', tareaId: 'tsk_006', alumnoId: 'stdnt_alumno02', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-algebra-mateo.pdf', fechaEntregaAlumno: '2025-10-22T10:00:00Z', calificacion: 88, comentarioDocente: 'Buen trabajo, Mateo. Revisa el ejercicio 5.' },
   { id: 'ent_007', tareaId: 'tsk_007', alumnoId: 'stdnt_alumno02', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-celula-mateo.docx', fechaEntregaAlumno: '2025-10-24T18:00:00Z', calificacion: 92, comentarioDocente: 'Muy buen reporte, excelentes conclusiones.' },
   { id: 'ent_008', tareaId: 'tsk_002', alumnoId: 'stdnt_alumno02', estado: 'entregada', archivoEntrega: 'uploads/tareas/tarea-sistemasolar-mateo.pdf', fechaEntregaAlumno: '2025-11-01T14:20:00Z', calificacion: null, comentarioDocente: null },
-  { id: 'ent_009', tareaId: 'tsk_009', alumnoId: 'stdnt_alumno02', estado: 'calificada', archivoEntrega: 'uploads/tareas/tarea-descubrimiento-mateo.pdf', fechaEntregaAlumno: '2024-11-03T22:00:00Z', calificacion: 75, comentarioDocente: 'Faltó profundidad en el análisis de las consecuencias.' },
 ];
+
 /**
  * Listar tareas
  */
 const getTareas = async (req, res, next) => {
   try {
-    let { alumnoId, estado, materia, page = 1, pageSize = 20 } = req.query;
+    const { alumnoId, estado, materia, page = 1, pageSize = 20 } = req.query;
     const userRol = req.user.rol;
     const userId = req.user.id;
+    const targetAlumnoId = userRol === 'alumno' ? userId : alumnoId;
 
-    let tareasResult = [];
-
-    // Filtrar por alumno (en producción buscar por asignación a grupo/alumno)
-    if (alumnoId) {
-      // Verificar permisos
-      if (userRol === 'alumno' && alumnoId !== userId) {
-        throw ErrorFactory.forbidden('No puede consultar tareas de otro alumno');
-      }
-      // En mock todas las tareas son del mismo alumno
+    if (!targetAlumnoId && userRol !== 'docente') {
+      throw ErrorFactory.badRequest('El parámetro alumnoId es requerido');
     }
-    if (userRol === 'docente') {
-      // Para el docente, mostrar todas las entregas existentes.
-      const todosLosAlumnos = MOCK_USERS.filter(u => u.rol === 'alumno');
-      
-      MOCK_TAREAS.forEach(tarea => {
-        todosLosAlumnos.forEach(alumno => {
-          const entregaExistente = MOCK_ENTREGAS.find(
-            e => e.tareaId === tarea.id && e.alumnoId === alumno.id
-          );
 
-          let estadoFinal = entregaExistente ? entregaExistente.estado : 'pendiente';
-          if (estadoFinal === 'pendiente' && new Date(tarea.fechaEntrega) < new Date()) {
-            estadoFinal = 'vencida';
-          }
+    let tareasResult = MOCK_TAREAS.map(tarea => {
+      const entrega = MOCK_ENTREGAS.find(e => e.tareaId === tarea.id && e.alumnoId === targetAlumnoId);
+      return {
+        ...tarea,
+        estado: entrega ? entrega.estado : 'pendiente',
+        calificacion: entrega ? entrega.calificacion : null,
+        comentarioDocente: entrega ? entrega.comentarioDocente : null,
+        archivoEntrega: entrega ? entrega.archivoEntrega : null,
+        fechaEntregaAlumno: entrega ? entrega.fechaEntregaAlumno : null,
+      };
+    });
 
-          const tareaParaAlumno = {
-            ...tarea,
-            ...(entregaExistente || { calificacion: null, comentarioDocente: null, archivoEntrega: null, fechaEntregaAlumno: null }),
-            estado: estadoFinal,
-            alumno: {
-              id: alumno.id,
-              nombre: alumno.nombre,
-            },
-          };
-          // Si se filtra por un alumno específico, solo agregar las de ese alumno
-          if (!alumnoId || alumno.id === alumnoId) {
-            tareasResult.push(tareaParaAlumno);
-          }
-        });
-      });
-
-      tareasResult.sort((a, b) => new Date(b.fechaEntrega) - new Date(a.fechaEntrega));
-    } else {
-      // Para alumnos y padres, mostrar todas las tareas y su estado para ese alumno.
-      let targetAlumnoId = userRol === 'alumno' ? userId : alumnoId;
-      if (userRol === 'padres') {
-        const alumnoAsociado = MOCK_USERS.find(u => u.padresId === userId);
-        if (alumnoAsociado) targetAlumnoId = alumnoAsociado.id;
-      }
-
-      if (!targetAlumnoId) {
-        throw ErrorFactory.badRequest('El parámetro alumnoId es requerido');
-      }
-
-      tareasResult = MOCK_TAREAS.map(tarea => {
-        const entrega = MOCK_ENTREGAS.find(e => e.tareaId === tarea.id && e.alumnoId === targetAlumnoId);
-        const tareaFinal = { ...tarea, ...(entrega || {}) };
-
-        let estadoFinal = entrega ? entrega.estado : 'pendiente';
-        let calificacionFinal = entrega ? entrega.calificacion : null;
-
-        // Si está pendiente, verificar si está vencida
-        if (estadoFinal === 'pendiente' && new Date(tarea.fechaEntrega) < new Date()) {
-          estadoFinal = 'vencida';
-          calificacionFinal = 0; // Asignar calificación 0 si está vencida
-        }
-
-        tareaFinal.estado = estadoFinal;
-        tareaFinal.calificacion = calificacionFinal;
-        return tareaFinal;
-      });
-      tareasResult.sort((a, b) => new Date(a.fechaEntrega) - new Date(b.fechaEntrega));
-    }
     // Filtrar por estado
     if (estado) {
       tareasResult = tareasResult.filter(t => t.estado === estado);
     }
+
+    // Filtrar por materia
+    if (materia) {
+      tareasResult = tareasResult.filter(t => t.materia === materia);
+    }
+
+    // Ordenar por fecha de entrega
+    tareasResult.sort((a, b) => new Date(a.fechaEntrega) - new Date(b.fechaEntrega));
 
     // Paginación
     const start = (page - 1) * pageSize;
@@ -210,19 +160,23 @@ const getTareas = async (req, res, next) => {
  */
 const getTareaById = async (req, res, next) => {
   try {
-    const { tareaId, alumnoId } = req.params;
+    const { tareaId } = req.params;
+    const { alumnoId } = req.query;
+    const userId = req.user.id;
+    const userRol = req.user.rol;
+    const targetAlumnoId = userRol === 'alumno' ? userId : alumnoId;
 
-    const tarea = MOCK_TAREAS.find(t => t.id === tareaId)
+    const tarea = MOCK_TAREAS.find(t => t.id === tareaId);
 
     if (!tarea) {
       throw ErrorFactory.notFound('Tarea');
     }
 
-    const entrega = MOCK_ENTREGAS.find(e => e.tareaId === tareaId && e.alumnoId === alumnoId);
+    const entrega = MOCK_ENTREGAS.find(e => e.tareaId === tarea.id && e.alumnoId === targetAlumnoId);
 
     res.status(200).json({
       ...tarea,
-      ...(entrega || { estado: 'pendiente' })
+      ...(entrega && { ...entrega }) // Fusiona los datos de la entrega si existe
     });
 
   } catch (error) {
@@ -254,10 +208,16 @@ const entregarTarea = async (req, res, next) => {
       throw ErrorFactory.notFound('Tarea');
     }
 
+    // Buscar si ya existe una entrega
+    let entrega = MOCK_ENTREGAS.find(e => e.tareaId === tareaId && e.alumnoId === userId);
+
+    if (entrega && (entrega.estado === 'entregada' || entrega.estado === 'calificada')) {
+      throw ErrorFactory.badRequest('Esta tarea ya fue entregada');
+    }
+
     // Validar que no esté vencida
     const fechaEntrega = new Date(tarea.fechaEntrega);
     const ahora = new Date();
-
     if (ahora > fechaEntrega) {
       throw ErrorFactory.badRequest('La fecha de entrega ha expirado');
     }
@@ -268,18 +228,17 @@ const entregarTarea = async (req, res, next) => {
       tareaId: tarea.id,
       alumnoId: userId,
       estado: 'entregada',
-      archivoEntrega: archivo.path, // Usar la ruta del archivo guardado por multer
+      archivoEntrega: archivo.path,
       fechaEntregaAlumno: new Date().toISOString(),
       comentarioAlumno: comentario || null,
-      calificacion: null,
-      comentarioDocente: null,
     };
 
     MOCK_ENTREGAS.push(datosEntrega);
 
     res.status(200).json({
       mensaje: 'Tarea entregada exitosamente',
-      entrega: datosEntrega,
+      entrega: entrega,
+      tarea: tarea
     });
   } catch (error) {
     next(error);
@@ -330,7 +289,7 @@ const calificarTarea = async (req, res, next) => {
 
     res.status(200).json({
       mensaje: 'Tarea calificada exitosamente',
-      entrega: entrega
+      tarea: tarea
     });
   } catch (error) {
     next(error);

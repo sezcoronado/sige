@@ -97,7 +97,7 @@ npm run dev
 
 ## 👥 USUARIOS DE PRUEBA
 
-### Padre de Familia
+### Padres de Familia
 ```
 Email: padre@ejemplo.com
 Password: Password123!

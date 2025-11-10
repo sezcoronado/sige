@@ -9,7 +9,7 @@ const MOCK_USERS = [
     id: 'mthr_alumno01',
     nombre: 'Gerardo y Ximena',
     email: 'padres@ejemplo.com',
-    password: '$2a$10$X2YZ3ABC...',  // "Password123!" hasheado
+    password: '$2a$10$X2YZ3ABC...', // "Password123!" hasheado
     rol: 'padres'
   },
   {
@@ -17,15 +17,32 @@ const MOCK_USERS = [
     nombre: 'María González',
     email: 'docente@escuela.edu.mx',
     password: '$2a$10$X2YZ3ABC...',  // "Password123!" hasheado
-    rol: 'docente'
+    rol: 'docente',
   },
   {
     id: 'stdnt_alumno01',
     nombre: 'Emma Hernandez',
     email: 'alumno@ejemplo.com',
     password: '$2a$10$X2YZ3ABC...',  // "Password123!" hasheado
-    rol: 'alumno'
-  }
+    rol: 'alumno',
+    padresId: 'mthr_alumno01'
+  },
+  // --- NUEVOS USUARIOS ---
+  {
+    id: 'mthr_alumno02',
+    nombre: 'Laura y Roberto',
+    email: 'padres2@ejemplo.com',
+    password: '$2a$10$X2YZ3ABC...', // "Password123!" hasheado
+    rol: 'padres'
+  },
+  {
+    id: 'stdnt_alumno02',
+    nombre: 'Mateo Rodríguez',
+    email: 'alumno2@ejemplo.com',
+    password: '$2a$10$X2YZ3ABC...', // "Password123!" hasheado
+    rol: 'alumno',
+    padresId: 'mthr_alumno02'
+  },
 ];
 
 /**
@@ -61,7 +78,8 @@ const login = async (req, res, next) => {
     const tokenPayload = {
       id: user.id,
       email: user.email,
-      rol: user.rol
+      rol: user.rol,
+      nombre: user.nombre // <-- AÑADIDO: Incluir el nombre en el token
     };
 
     const token = generateToken(tokenPayload);
@@ -76,7 +94,8 @@ const login = async (req, res, next) => {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        rol: user.rol
+        rol: user.rol,
+        ...((user.rol === 'alumno' || user.rol === 'padres') && { alumnoAsociado: user.rol === 'padres' ? MOCK_USERS.find(u => u.padresId === user.id)?.id : user.id })
       }
     });
   } catch (error) {
@@ -108,7 +127,8 @@ const refreshToken = async (req, res, next) => {
     const tokenPayload = {
       id: user.id,
       email: user.email,
-      rol: user.rol
+      rol: user.rol,
+      nombre: user.nombre // El nombre viene en el payload del refresh token
     };
 
     const newToken = generateToken(tokenPayload);
@@ -147,10 +167,31 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
+/**
+ * @description Obtener lista de usuarios por rol
+ * @route GET /api/v1/auth/users
+ * @access Docente
+ */
+const getUsersByRol = async (req, res, next) => {
+  try {
+    const { rol } = req.query;
+    if (!rol) {
+      throw ErrorFactory.badRequest('El parámetro "rol" es requerido');
+    }
+
+    const usuariosFiltrados = MOCK_USERS.filter(u => u.rol === rol).map(({ password, ...user }) => user); // Excluir password
+
+    res.status(200).json({ items: usuariosFiltrados });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   logout,
   refreshToken,
   getCurrentUser,
+  getUsersByRol,
   MOCK_USERS, // Exportar para que otros controladores puedan usarlo
 };

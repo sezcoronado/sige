@@ -1,6 +1,7 @@
 // src/pages/TareasPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import tareasService, { Tarea } from '../api/services/tareas.service';
 import authService from '../api/services/auth.service';
 import Card from '../components/common/Card';
@@ -8,13 +9,36 @@ import Button from '../components/common/Button';
 import Alert from '../components/common/Alert';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
+interface Usuario {
+  id: string;
+  nombre: string;
+  rol: string;
+}
+interface TaskStats {
+  name: string;
+  value: number;
+}
+
 const TareasPage: React.FC = () => {
   const navigate = useNavigate();
   const [tareas, setTareas] = useState<Tarea[]>([]);
-  const [filtro, setFiltro] = useState<'todas' | 'pendiente' | 'entregada' | 'calificada'>('todas');
+  const [filtro, setFiltro] = useState<'todas' | 'pendiente' | 'entregada' | 'calificada' | 'vencida'>('todas');
+  const [filtroAlumno, setFiltroAlumno] = useState<string>('todos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [taskStats, setTaskStats] = useState<TaskStats[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const [alumnos, setAlumnos] = useState<Usuario[]>([]);
+
+  const COLORS = {
+    pendiente: '#FBBF24', // amber-400
+    entregada: '#3B82F6', // blue-500
+    calificada: '#10B981', // emerald-500
+    vencida: '#EF4444', // red-500
+  };
+
   
   // Modal de entrega
   const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
@@ -28,18 +52,78 @@ const TareasPage: React.FC = () => {
       navigate('/login');
       return;
     }
+
+    const getAlumnos = async () => {
+      if (usuario.rol === 'docente') {
+        try {
+          // Este método se debe añadir en auth.service.ts
+          const data = await authService.getAlumnos();
+          setAlumnos(data);
+        } catch (err) {
+          console.error("Error al cargar la lista de alumnos:", err);
+        }
+      }
+    };
+
     cargarTareas();
-  }, [navigate, filtro]);
+    fetchTaskStats();
+    getAlumnos();
+  }, [filtro, filtroAlumno]);
+
+  const fetchTaskStats = async () => {
+    const usuario = authService.getUsuarioLocal();
+    if (!usuario) return;
+
+      try {
+        setLoadingStats(true);
+        let alumnoIdParaStats: string | undefined;
+
+        if (usuario.rol === 'docente') {
+          alumnoIdParaStats = filtroAlumno === 'todos' ? undefined : filtroAlumno;
+        } else {
+          alumnoIdParaStats = usuario.rol === 'alumno' ? usuario.id : usuario.alumnoAsociado;
+        }
+
+        // Si es docente y no hay alumno seleccionado, la API devuelve todas las tareas
+        const response = await tareasService.getTareas(alumnoIdParaStats);
+        const tasks = response.items;
+
+        const stats = tasks.reduce((acc, task) => {
+          const estado = task.estado || 'pendiente';
+          acc[estado] = (acc[estado] || 0) + 1;
+          return acc;
+        }, {} as { [key: string]: number });
+
+        const formattedStats = Object.keys(stats).map(key => ({
+          name: key.charAt(0).toUpperCase() + key.slice(1),
+          value: stats[key],
+        }));
+
+        setTaskStats(formattedStats);
+      } catch (error) {
+        console.error("Error al cargar estadísticas de tareas:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+  };
+
 
   const cargarTareas = async () => {
     try {
       const usuario = authService.getUsuarioLocal();
       setLoading(true);
       setError(null);
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
+      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : usuario?.alumnoAsociado;
       const estado = filtro === 'todas' ? undefined : filtro;
-      const data = await tareasService.getTareas(alumnoId, estado);
-      setTareas(data.items);
+
+      // Para el docente, el ID del alumno viene del filtro
+      if (usuario?.rol === 'docente') {
+        const data = await tareasService.getTareas(filtroAlumno === 'todos' ? undefined : filtroAlumno, estado);
+        setTareas(data.items);
+      } else {
+        const data = await tareasService.getTareas(alumnoId, estado);
+        setTareas(data.items);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -73,6 +157,7 @@ const TareasPage: React.FC = () => {
       setArchivo(null);
       setComentario('');
       cargarTareas();
+      fetchTaskStats(); // <-- AÑADIDO: Volver a cargar las estadísticas para la gráfica
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -88,6 +173,8 @@ const TareasPage: React.FC = () => {
         return 'bg-blue-100 text-blue-800';
       case 'calificada':
         return 'bg-green-100 text-green-800';
+      case 'vencida':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -100,6 +187,8 @@ const TareasPage: React.FC = () => {
       </div>
     );
   }
+
+  const usuario = authService.getUsuarioLocal();
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -128,9 +217,66 @@ const TareasPage: React.FC = () => {
           </div>
         )}
 
+        {/* Gráfica de Tareas */}
+        {usuario && (
+          <Card className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Resumen de Tareas</h2>
+            {loadingStats ? (
+              <div className="h-64 flex items-center justify-center">
+                <LoadingSpinner text="Cargando estadísticas..." />
+              </div>
+            ) : (
+              <>
+                {taskStats.length > 0 ? (
+                  <div style={{ width: '100%', height: 300 }}>
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie
+                          data={taskStats}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent, value }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                        >
+                          {taskStats.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[entry.name.toLowerCase() as keyof typeof COLORS]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value} tarea(s)`} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : <p className="text-gray-600">No hay tareas para mostrar estadísticas.</p>}
+              </>
+            )}
+          </Card>
+        )}
+
         {/* Filtros */}
-        <div className="mb-6 flex gap-2">
-          {(['todas', 'pendiente', 'entregada', 'calificada'] as const).map(f => (
+        <div className="mb-6 flex flex-wrap gap-4 items-center">
+          {usuario?.rol === 'docente' && (
+            <div>
+              <label htmlFor="filtro-alumno" className="text-sm font-medium text-gray-700 mr-2">Filtrar por Alumno:</label>
+              <select
+                id="filtro-alumno"
+                value={filtroAlumno}
+                onChange={(e) => setFiltroAlumno(e.target.value)}
+                className="px-4 py-2 rounded-lg bg-white text-gray-700 border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="todos">Todos los Alumnos</option>
+                {alumnos.map(alumno => (
+                  <option key={alumno.id} value={alumno.id}>{alumno.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            {(['todas', 'pendiente', 'entregada', 'calificada', 'vencida'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFiltro(f)}
@@ -142,7 +288,8 @@ const TareasPage: React.FC = () => {
             >
               {f === 'todas' ? 'Todas' : f}
             </button>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Lista de Tareas */}
@@ -161,6 +308,11 @@ const TareasPage: React.FC = () => {
               <Card key={tarea.id}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
+                    {usuario?.rol === 'docente' && tarea.alumno && (
+                      <p className="text-sm font-semibold text-indigo-600 mb-2">
+                        Alumno: {tarea.alumno.nombre}
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">{tarea.titulo}</h3>
                       <span className={`text-xs px-2 py-1 rounded font-medium ${getEstadoColor(tarea.estado)}`}>
@@ -182,8 +334,12 @@ const TareasPage: React.FC = () => {
                         Entrega: {new Date(tarea.fechaEntrega).toLocaleDateString()}
                       </span>
                       {tarea.calificacion !== null && (
-                        <span className="font-semibold text-green-600">
-                          Calificación: {tarea.calificacion}/100
+                        <span
+                          className={`font-semibold ${
+                            tarea.estado === 'vencida' ? 'text-gray-500' : 'text-green-600'
+                          }`}
+                        >
+                          Calificación: {tarea.calificacion} / 100
                         </span>
                       )}
                     </div>

@@ -23,6 +23,7 @@ export interface Usuario {
   nombre: string;
   email: string;
   rol: string;
+  alumnoAsociado?: string;
 }
 
 class AuthService {
@@ -90,6 +91,17 @@ class AuthService {
     return Promise.resolve(MOCK_ALUMNO);
   }
 
+  /**
+   * Obtener lista de alumnos (para docentes)
+   */
+  async getAlumnos(): Promise<Usuario[]> {
+    try {
+      const response = await apiClient.get<{ items: Usuario[] }>('/auth/users?rol=alumno');
+      return response.data.items;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
   /**
    * Verificar si el usuario está autenticado
    */

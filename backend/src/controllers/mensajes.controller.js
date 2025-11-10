@@ -25,9 +25,48 @@ let MOCK_MENSAJES = [
     leido: true,
     fechaEnvio: '2025-11-02T10:30:00Z',
     fechaLectura: '2025-11-02T11:00:00Z'
-  }
+  },
+  // --- NUEVOS MENSAJES ---
+  {
+    id: 'msg_30014',
+    remitenteId: 'mthr_alumno02', // ID padres 2
+    destinatariosIds: ['tchr_12345'], // ID de docente
+    asunto: 'Justificante de inasistencia - Mateo Rodríguez',
+    contenido: 'Buenas tardes, le informo que nuestro hijo Mateo no podrá asistir mañana por una cita médica. Adjuntaremos el justificante a la brevedad.',
+    leido: false,
+    fechaEnvio: '2025-11-03T16:00:00Z',
+    fechaLectura: null
+  },
+  {
+    id: 'msg_30015',
+    remitenteId: 'tchr_12345', // ID de docente
+    destinatariosIds: ['mthr_alumno02'], // ID padres 2
+    asunto: 'Re: Justificante de inasistencia - Mateo Rodríguez',
+    contenido: 'Enterada, muchas gracias por avisar. Que todo salga bien en la cita. Saludos.',
+    leido: false, // Para que los padres lo vean como no leído
+    fechaEnvio: '2025-11-03T16:30:00Z',
+    fechaLectura: null
+  },
 ];
 
+/**
+ * Helper para obtener el nombre enriquecido de un usuario.
+ * Si es un padre, agrega "papas de [nombre del alumno]".
+ * @param {object} usuario El objeto de usuario.
+ * @returns {string|null} El nombre formateado o null si no hay usuario.
+ */
+const getNombreEnriquecido = (usuario) => {
+  if (!usuario) {
+    return null;
+  }
+  if (usuario.rol === 'padres') {
+    const alumnoAsociado = MOCK_USERS.find(u => u.rol === 'alumno' && u.padresId === usuario.id);
+    if (alumnoAsociado) {
+      return `${usuario.nombre} papas de ${alumnoAsociado.nombre}`;
+    }
+  }
+  return usuario.nombre;
+};
 /**
  * Listar mensajes del usuario
  */
@@ -64,8 +103,8 @@ const getMensajes = async (req, res, next) => {
 
       return {
         ...m,
-        remitente: remitente ? { id: remitente.id, nombre: remitente.nombre } : null,
-        destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: d.nombre } : null)
+        remitente: remitente ? { id: remitente.id, nombre: getNombreEnriquecido(remitente) } : null,
+        destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: getNombreEnriquecido(d) } : null)
       };
     });
 
@@ -147,8 +186,8 @@ const enviarMensaje = async (req, res, next) => {
 
     const mensajeRespuesta = {
       ...nuevoMensaje,
-      remitente: remitente ? { id: remitente.id, nombre: remitente.nombre } : null,
-      destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: d.nombre } : null)
+      remitente: remitente ? { id: remitente.id, nombre: getNombreEnriquecido(remitente) } : null,
+      destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: getNombreEnriquecido(d) } : null)
     };
 
     res.status(201).json({
@@ -190,8 +229,8 @@ const getMensajeById = async (req, res, next) => {
 
     const mensajeEnriquecido = {
       ...mensaje,
-      remitente: remitente ? { id: remitente.id, nombre: remitente.nombre } : null,
-      destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: d.nombre } : null)
+      remitente: remitente ? { id: remitente.id, nombre: getNombreEnriquecido(remitente) } : null,
+      destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: getNombreEnriquecido(d) } : null)
     };
 
     res.status(200).json(mensajeEnriquecido);
@@ -239,8 +278,8 @@ const marcarLeido = async (req, res, next) => {
 
     const mensajeRespuesta = {
       ...mensaje,
-      remitente: remitente ? { id: remitente.id, nombre: remitente.nombre } : null,
-      destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: d.nombre } : null)
+      remitente: remitente ? { id: remitente.id, nombre: getNombreEnriquecido(remitente) } : null,
+      destinatarios: destinatarios.map(d => d ? { id: d.id, nombre: getNombreEnriquecido(d) } : null)
     };
 
     res.status(200).json({

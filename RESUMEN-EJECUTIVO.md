@@ -41,19 +41,19 @@ Desarrollar e integrar **5 servicios completos** que demuestren la comunicación
 ### 📁 Frontend (React + TypeScript)
 
 | Archivo | Descripción | Líneas |
-|---------|-------------|--------|
+|--------------------------|------------------------------------|--------|
 | `axios.config.ts` | Configuración Axios + interceptors | 80 |
 | `auth.service.ts` | Servicio de autenticación | 120 |
-| `cartera.service.ts` | Servicio de cartera (pendiente generar) | ~100 |
-| `transacciones.service.ts` | Servicio de tienda (pendiente generar) | ~120 |
-| `tareas.service.ts` | Servicio de tareas (pendiente generar) | ~100 |
-| `mensajes.service.ts` | Servicio de mensajes (pendiente generar) | ~100 |
-| **Componentes y páginas** (a completar) | | |
+| `cartera.service.ts` | Servicio de cartera | ~100 |
+| `transacciones.service.ts` | Servicio de tienda | ~120 |
+| `tareas.service.ts` | Servicio de tareas | ~100 |
+| `mensajes.service.ts` | Servicio de mensajes | ~100 |
+| **Páginas Implementadas** | | |
 | `LoginPage.tsx` | Página de login | ~150 |
 | `DashboardPage.tsx` | Dashboard principal | ~100 |
 | `CarteraPage.tsx` | Gestión de cartera | ~200 |
 | `TiendaPage.tsx` | Tienda escolar | ~250 |
-| `TareasPage.tsx` | Tareas académicas | ~200 |
+| `TareasPage.tsx` | Tareas académicas con gráficas | ~400 |
 | `MensajesPage.tsx` | Mensajería | ~220 |
 
 ---
@@ -116,7 +116,7 @@ Routing: React Router v6 (a implementar)
 - Consulta de saldo en tiempo real
 - Depósitos con validación de monto
 - Historial paginado de movimientos
-- Restricciones por rol (padre/alumno)
+- Restricciones por rol (padres/alumno)
 
 **Frontend (a implementar):**
 - Servicio: `cartera.service.ts`
@@ -132,7 +132,7 @@ Routing: React Router v6 (a implementar)
 ✅ GET    /api/v1/transacciones/productos
 ✅ GET    /api/v1/transacciones/restricciones?alumnoId=xxx
 ✅ POST   /api/v1/transacciones
-✅ GET    /api/v1/transacciones?alumnoId=xxx
+✅ PUT    /api/v1/transacciones/restricciones
 ```
 
 **Características:**
@@ -222,17 +222,17 @@ Routing: React Router v6 (a implementar)
 ### Diseño y UX (20%) - 🟡 PENDIENTE FRONTEND
 
 | Requisito | Estado | Próximos pasos |
-|-----------|--------|----------------|
-| Interfaz atractiva | 🟡 | Implementar componentes con Tailwind |
-| Centrado en usuario | 🟡 | Loading, success, error feedback |
-| Elementos visuales | 🟡 | Cards, badges, modals |
+|-----------|--------|-----------|
+| Interfaz atractiva | ✅ | UI implementada con Tailwind |
+| Centrado en usuario | ✅ | Feedback visual (loading, alerts) |
+| Elementos visuales | ✅ | Gráficas, modales, cards, badges |
 
 ### Presentación (15%) - 📹 PENDIENTE VIDEO
 
 | Requisito | Estado | Próximos pasos |
 |-----------|--------|----------------|
-| Video claro < 7 min | ⏳ | Grabar según guía |
-| Explicación conceptos | ⏳ | Seguir script del video |
+| Video claro < 7 min | ⏳ | Grabar siguiendo la guía estratégica |
+| Explicación conceptos | ⏳ | Seguir el guion del video |
 | Decisiones de diseño | ⏳ | Explicar JWT, RBAC, validaciones |
 
 ---
@@ -253,14 +253,14 @@ Routing: React Router v6 (a implementar)
 └─────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────┐
-│  FRONTEND                          30% 🟡   │
+│  FRONTEND                         100% ✅   │
 ├─────────────────────────────────────────────┤
-│  ███████████░░░░░░░░░░░░░░░░░░░░░░          │
-│  • Axios configurado ✅                     │
-│  • Servicio de auth ✅                      │
-│  • Pendiente: 4 servicios más               │
-│  • Pendiente: Componentes UI                │
-│  • Pendiente: Páginas                       │
+│  ███████████████████████████████████        │
+│  • 5 servicios integrados                 │
+│  • 6 páginas funcionales                  │
+│  • Componentes UI reutilizables           │
+│  • Gráficas de datos dinámicas            │
+│  • RBAC implementado en UI                │
 └─────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────┐
@@ -277,44 +277,16 @@ Routing: React Router v6 (a implementar)
 
 ## 🚀 PRÓXIMOS PASOS INMEDIATOS
 
-### 1. **Completar Frontend (2-3 días)**
-
-```bash
-cd frontend
-
-# Instalar dependencias
-npm install axios react-router-dom react-hook-form
-
-# Crear estructura de carpetas
-mkdir -p src/api/services
-mkdir -p src/components/{common,features}
-mkdir -p src/pages
-mkdir -p src/context
-mkdir -p src/hooks
-```
-
-**Orden de implementación sugerido:**
-1. ✅ `auth.service.ts` (ya está)
-2. Crear `cartera.service.ts`
-3. Crear `transacciones.service.ts`
-4. Crear `tareas.service.ts`
-5. Crear `mensajes.service.ts`
-6. Implementar `LoginPage.tsx`
-7. Implementar `DashboardPage.tsx`
-8. Implementar `CarteraPage.tsx` (DEMO 1)
-9. Implementar `TiendaPage.tsx` (DEMO 2)
-10. Implementar `TareasPage.tsx` (DEMO 3)
-11. Implementar `MensajesPage.tsx` (DEMO 4)
-
-### 2. **Testing Integración (1 día)**
+### 1. **Testing de Integración Final (1 día)**
 
 - [ ] Probar flujo completo de cada servicio
 - [ ] Verificar manejo de errores en UI
 - [ ] Validar loading states
 - [ ] Confirmar refresh token automático
 - [ ] Verificar RBAC (roles)
+- [ ] Probar con todos los usuarios de prueba
 
-### 3. **Grabar Video (1 día)**
+### 2. **Grabar Video (1 día)**
 
 - [ ] Revisar guía estratégica
 - [ ] Practicar demo 2-3 veces

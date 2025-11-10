@@ -128,6 +128,8 @@ npm install
 - vite
 - tailwindcss
 - typescript
+- recharts (para gráficas)
+- @types/recharts (dev)
 - autoprefixer
 - postcss
 
@@ -174,40 +176,69 @@ npm run dev
 1. En tu navegador, deberías ver la página de login
 2. Usa las credenciales de prueba:
 
-**Padre:**
+**Padres:**
 ```
-Email: padre@ejemplo.com
+Padres 1 (Emma): padres@ejemplo.com
+Padres 2 (Mateo): padres2@ejemplo.com
+Password: Password123!
+```
+
+**Alumnos:**
+```
+Alumno 1 (Emma): alumno@ejemplo.com
+Alumno 2 (Mateo): alumno2@ejemplo.com
+Password: Password123!
+```
+
+**Docente:**
+```
+Email: docente@escuela.edu.mx
 Password: Password123!
 ```
 
 3. Haz clic en "Iniciar Sesión"
 4. Deberías ver el dashboard con las opciones disponibles
 
-### 3.2 Probar Cartera Digital
+### 3.2 Probar Roles y Datos Diferenciados
 
-1. Haz clic en "Cartera Digital"
-2. Verás el saldo actual: **$250.75 MXN**
-3. Haz clic en "Depositar"
-4. Ingresa un monto: **200**
-5. Selecciona método de pago: **Tarjeta**
-6. Haz clic en "Confirmar Depósito"
-7. ✅ Verás mensaje de éxito y el saldo actualizado
+1. **Login como Docente (`docente@escuela.edu.mx`)**
+   - Haz clic en "Tareas Académicas".
+   - ✅ Verás el filtro "Filtrar por Alumno" con Emma y Mateo.
+   - ✅ La gráfica muestra el resumen de **todos** los alumnos.
+   - Filtra por "Emma Hernandez". La gráfica y la lista se actualizan para mostrar solo sus tareas.
+   - Filtra por "Mateo Rodríguez". La gráfica y la lista cambian de nuevo.
 
-### 3.3 Probar Tienda Escolar
+2. **Login como Padres 2 (`padres2@ejemplo.com`)**
+   - Haz clic en "Cartera Digital".
+   - ✅ Verás el saldo de Mateo: **$150.00 MXN**.
+   - Haz clic en "Tareas Académicas".
+   - ✅ Verás la gráfica y la lista de tareas de Mateo.
 
-1. Vuelve al Dashboard
-2. Cierra sesión (botón arriba derecha)
-3. Login como alumno:
-```
-Email: alumno@ejemplo.com
-Password: Password123!
-```
-4. Haz clic en "Tienda Escolar"
-5. Agrega algunos productos al carrito
-6. Intenta agregar el **Refresco de cola**
-7. ❌ Verás error: "Producto restringido"
-8. Compra los otros productos
-9. ✅ Saldo descontado correctamente
+3. **Login como Alumno 1 (`alumno@ejemplo.com`)**
+   - Haz clic en "Cartera Digital".
+   - ✅ Verás el saldo de Emma: **$250.75 MXN**.
+   - Haz clic en "Tienda Escolar".
+   - Intenta agregar el **Refresco de cola**.
+   - ❌ Verás un error: "Producto restringido".
+
+### 3.3 Probar Flujo de Entrega y Calificación
+
+1. **Login como Alumno 1 (`alumno@ejemplo.com`)**
+   - Ve a "Tareas Académicas".
+   - Busca una tarea **pendiente** (ej. "Problemas de fracciones").
+   - Haz clic en "Entregar", selecciona un archivo y confírmalo.
+   - ✅ La tarea cambia a "entregada" y la gráfica se actualiza.
+
+2. **Login como Docente (`docente@escuela.edu.mx`)**
+   - Ve a "Tareas Académicas" y filtra por "Emma Hernandez".
+   - Busca la tarea recién entregada (ahora en estado "entregada").
+   - Haz clic en "Calificar" (o el botón correspondiente, si lo implementas).
+   - *Simulación:* El docente califica la tarea en el backend.
+
+3. **Login de nuevo como Alumno 1 (`alumno@ejemplo.com`)**
+   - Ve a "Tareas Académicas".
+   - ✅ La tarea ahora debería aparecer como "calificada" con su nota.
+   - ✅ La gráfica de pastel se habrá actualizado de nuevo.
 
 ### 3.4 Probar Tareas
 
@@ -217,7 +248,7 @@ Password: Password123!
 4. Haz clic en "Entregar" en una tarea
 5. Selecciona cualquier archivo PDF o imagen
 6. Haz clic en "Confirmar Entrega"
-7. ✅ Tarea marcada como entregada
+7. ✅ Tarea marcada como entregada y el nombre del archivo en el servidor incluye el nombre del alumno.
 
 ### 3.5 Probar Mensajería
 

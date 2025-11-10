@@ -3,6 +3,7 @@ const { ErrorFactory } = require('../utils/errors.util');
 
 // Simulación de base de datos
 let MOCK_CARTERAS = [
+  // Cartera Alumno 1
   {
     id: 'wlt_22001',
     alumnoId: 'stdnt_alumno01',
@@ -10,8 +11,20 @@ let MOCK_CARTERAS = [
     moneda: 'MXN',
     limiteGastoSemanal: 500.00,
     ultimaActualizacion: new Date().toISOString()
-  }
+  },
+  // Cartera Alumno 2
+  {
+    id: 'wlt_22002',
+    alumnoId: 'stdnt_alumno02',
+    saldo: 150.00,
+    moneda: 'MXN',
+    limiteGastoSemanal: 300.00,
+    ultimaActualizacion: new Date().toISOString()
+  },
 ];
+
+// Importar usuarios para buscar alumnos asociados
+const { MOCK_USERS } = require('./auth.controller');
 
 let MOCK_TRANSACCIONES_CARTERA = [
   {
@@ -33,7 +46,28 @@ let MOCK_TRANSACCIONES_CARTERA = [
     saldoNuevo: 250.75,
     descripcion: 'Compra en tienda escolar',
     fecha: '2025-11-02T10:45:00Z'
-  }
+  },
+  // Transacciones nuevo alumno
+  {
+    id: 'txn_003',
+    carteraId: 'wlt_22002',
+    tipo: 'deposito',
+    monto: 200.00,
+    saldoAnterior: 0,
+    saldoNuevo: 200.00,
+    descripcion: 'Depósito inicial',
+    fecha: '2025-10-05T11:00:00Z'
+  },
+  {
+    id: 'txn_004',
+    carteraId: 'wlt_22002',
+    tipo: 'compra',
+    monto: -50.00,
+    saldoAnterior: 200.00,
+    saldoNuevo: 150.00,
+    descripcion: 'Compra de útiles escolares',
+    fecha: '2025-11-03T12:00:00Z'
+  },
 ];
 
 /**
@@ -41,10 +75,17 @@ let MOCK_TRANSACCIONES_CARTERA = [
  */
 const getSaldo = async (req, res, next) => {
   try {
-    const { alumnoId } = req.query;
+    let { alumnoId } = req.query;
     const userRol = req.user.rol;
     const userId = req.user.id;
 
+    // Si el rol es 'padres', forzar el alumnoId asociado para seguridad.
+    if (userRol === 'padres') {
+      const alumnoAsociado = MOCK_USERS.find(u => u.padresId === userId);
+      if (alumnoAsociado) {
+        alumnoId = alumnoAsociado.id;
+      }
+    }
     // Validar que se proporcione alumnoId
     if (!alumnoId) {
       throw ErrorFactory.badRequest('El parámetro alumnoId es requerido', [
@@ -145,10 +186,17 @@ const depositar = async (req, res, next) => {
  */
 const getHistorial = async (req, res, next) => {
   try {
-    const { alumnoId, page = 1, pageSize = 20 } = req.query;
+    let { alumnoId, page = 1, pageSize = 20 } = req.query;
     const userRol = req.user.rol;
     const userId = req.user.id;
 
+    // Si el rol es 'padres', forzar el alumnoId asociado para seguridad.
+    if (userRol === 'padres') {
+      const alumnoAsociado = MOCK_USERS.find(u => u.padresId === userId);
+      if (alumnoAsociado) {
+        alumnoId = alumnoAsociado.id;
+      }
+    }
     if (!alumnoId) {
       throw ErrorFactory.badRequest('El parámetro alumnoId es requerido');
     }

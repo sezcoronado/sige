@@ -8,6 +8,7 @@ import Card from '../components/common/Card';
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const usuario = authService.getUsuarioLocal();
+
   const handleLogout = async () => {
     await authService.logout();
     navigate('/login');

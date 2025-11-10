@@ -1,5 +1,6 @@
 // src/controllers/transacciones.controller.js
 const { ErrorFactory } = require('../utils/errors.util');
+const { MOCK_USERS } = require('./auth.controller');
 
 // Mock de productos (ampliado)
 let MOCK_PRODUCTOS = [
@@ -38,7 +39,14 @@ let MOCK_RESTRICCIONES = [
     productoId: 'prd_004',
     motivo: 'Decisión familiar - Sin refrescos azucarados',
     tipoRestriccion: 'familiar'
-  }
+  },
+  {
+    id: 'res_002',
+    alumnoId: 'stdnt_alumno02',
+    productoId: 'prd_013', // Barra de granola
+    motivo: 'Alergia a las nueces',
+    tipoRestriccion: 'medica'
+  },
 ];
 
 // Mock de transacciones
@@ -90,10 +98,17 @@ const { MOCK_CARTERAS, MOCK_TRANSACCIONES_CARTERA } = require('./cartera.control
  */
 const getRestricciones = async (req, res, next) => {
   try {
-    const { alumnoId } = req.query;
+    let { alumnoId } = req.query;
     const userRol = req.user.rol;
     const userId = req.user.id;
 
+    // Si el rol es 'padres', forzar el alumnoId asociado para seguridad.
+    if (userRol === 'padres') {
+      const alumnoAsociado = MOCK_USERS.find(u => u.padresId === userId);
+      if (alumnoAsociado) {
+        alumnoId = alumnoAsociado.id; // Corregido: Usar el ID del alumno encontrado
+      }
+    }
     if (!alumnoId) {
       throw ErrorFactory.badRequest('El parámetro alumnoId es requerido');
     }
@@ -295,10 +310,17 @@ const crearTransaccion = async (req, res, next) => {
  */
 const getTransacciones = async (req, res, next) => {
   try {
-    const { alumnoId, page = 1, pageSize = 20 } = req.query;
+    let { alumnoId, page = 1, pageSize = 20 } = req.query;
     const userRol = req.user.rol;
     const userId = req.user.id;
 
+    // Si el rol es 'padres', forzar el alumnoId asociado para seguridad.
+    if (userRol === 'padres') {
+      const alumnoAsociado = MOCK_USERS.find(u => u.padresId === userId);
+      if (alumnoAsociado) {
+        alumnoId = alumnoAsociado.id; // Corregido: Usar el ID del alumno encontrado
+      }
+    }
     if (!alumnoId) {
       throw ErrorFactory.badRequest('El parámetro alumnoId es requerido');
     }

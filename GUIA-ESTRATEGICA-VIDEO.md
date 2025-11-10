@@ -3,159 +3,6 @@
 
 ---
 
-## 🎯 FASE 1: IMPLEMENTACIÓN (Duración: 4-5 días)
-
-### ✅ DÍA 1-2: BACKEND FUNCIONAL
-
-#### Prioridad ALTA - Implementar primero:
-
-**1. Setup del proyecto**
-```bash
-cd backend
-npm install
-mkdir -p uploads/tareas
-cp .env.example .env
-# Editar .env con JWT_SECRET real
-```
-
-**2. Probar endpoints críticos (usar Postman/Thunder Client)**
-
-Orden sugerido:
-```
-✅ POST /auth/login              → Verificar que devuelve token
-✅ GET /cartera                  → Con token, verificar respuesta
-✅ POST /cartera/depositar       → Validar actualización de saldo
-✅ GET /transacciones/productos  → Ver catálogo
-✅ POST /transacciones           → IMPORTANTE: validar restricciones
-✅ GET /tareas                   → Ver tareas mock
-✅ POST /tareas/:id/entregar     → SUBIR ARCHIVO (multipart)
-✅ GET /mensajes                 → Ver mensajes
-✅ POST /mensajes                → Enviar mensaje
-✅ PATCH /mensajes/:id           → Marcar leído
-```
-
-**3. Verificar manejo de errores**
-- Intentar login con credenciales incorrectas → 401
-- Comprar sin saldo → 402
-- Comprar producto restringido → 402
-- Acceder sin token → 401
-
----
-
-### ✅ DÍA 3-4: FRONTEND FUNCIONAL
-
-#### A. Componentes básicos primero:
-
-**1. Autenticación:**
-```tsx
-// LoginPage.tsx
-- Formulario de login
-- Validación de campos
-- Loading state durante request
-- Manejo de errores (mostrar mensaje)
-- Redirección al dashboard
-```
-
-**2. Dashboard (según rol):**
-```tsx
-// DashboardPage.tsx
-- Mostrar nombre del usuario
-- Botones de navegación a cada servicio
-- Indicador de saldo (si es padre/alumno)
-```
-
-**3. Cartera Digital:**
-```tsx
-// CarteraPage.tsx
-- Mostrar saldo actual (GET /cartera)
-- Formulario de depósito
-- Validación de monto > 0
-- Loading durante proceso
-- Mensaje de éxito/error
-- Refrescar saldo automáticamente
-```
-
-**4. Tienda Escolar:**
-```tsx
-// TiendaPage.tsx
-- Listar productos (GET /productos)
-- Cards con imagen, nombre, precio
-- Botón "Agregar al carrito"
-- Carrito flotante (badge con cantidad)
-- Botón "Finalizar compra"
-- Al comprar: POST /transacciones
-  → Mostrar loading
-  → Si falla (402): mostrar mensaje de restricción
-  → Si éxito: limpiar carrito, actualizar saldo
-```
-
-**5. Tareas:**
-```tsx
-// TareasPage.tsx
-- Listar tareas (GET /tareas)
-- Filtrar por estado
-- Card por tarea con:
-  → Título, materia, fecha entrega
-  → Botón "Entregar" (si pendiente)
-- Modal de entrega:
-  → Input type="file"
-  → Textarea opcional (comentario)
-  → POST /tareas/:id/entregar con FormData
-```
-
-**6. Mensajes:**
-```tsx
-// MensajesPage.tsx
-- Tabs: Recibidos | Enviados
-- Lista de mensajes
-- Badge "No leído" si aplica
-- Al hacer clic: mostrar detalle
-- Botón "Marcar como leído" (PATCH)
-- Botón "Nuevo mensaje"
-- Modal con form: destinatario, asunto, contenido
-```
-
-#### B. Elementos UI críticos:
-
-```tsx
-// LoadingSpinner.tsx - Usar durante requests
-// ErrorMessage.tsx   - Mostrar errores de API
-// SuccessMessage.tsx - Feedback positivo
-// Button.tsx         - Botón reutilizable con loading state
-```
-
----
-
-### ✅ DÍA 5: INTEGRACIÓN Y PULIDO
-
-#### Checklist final antes del video:
-
-**Backend:**
-- [ ] Servidor corre sin errores
-- [ ] Todos los endpoints responden correctamente
-- [ ] Manejo de errores funciona (401, 402, 404, etc.)
-- [ ] Archivos se suben correctamente a /uploads
-- [ ] Console.log limpio (sin logs innecesarios)
-
-**Frontend:**
-- [ ] Login funcional
-- [ ] Navegación entre páginas
-- [ ] Loading states en todas las requests
-- [ ] Mensajes de error claros y amigables
-- [ ] Cartera actualiza saldo en tiempo real
-- [ ] Transacción valida restricciones
-- [ ] Subida de archivos funciona
-- [ ] PATCH de mensajes funciona
-- [ ] UI responsiva (se ve bien en pantalla completa)
-- [ ] Sin errores en consola del navegador
-
-**Integración:**
-- [ ] Axios interceptor funciona (agrega token automáticamente)
-- [ ] Refresh token funciona si token expira
-- [ ] Logout limpia localStorage y redirige a login
-
----
-
 ## 🎬 FASE 2: VIDEO DEMOSTRATIVO (Duración: 1 día)
 
 ### Estructura del Video (7 minutos máximo)
@@ -181,75 +28,73 @@ Orden sugerido:
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
-│  MINUTO 1:30 - 3:00  │  DEMO CASO 1: Cartera      │
+│  MINUTO 1:30 - 3:30  │  DEMO CASO 1: Roles y Datos  │
 ├─────────────────────────────────────────────────────┤
-│  🎭 Rol: Padre de familia                           │
-│  ────────────────────────────────────────────────   │
-│  1. Login (mostrar token en DevTools)              │
-│  2. Dashboard → Navegar a Cartera                   │
-│  3. Consultar saldo actual (GET /cartera)           │
-│     → Mostrar request en Network tab                │
-│  4. Depositar $200 MXN                              │
-│     → Mostrar loading state                         │
-│     → Mostrar POST /cartera/depositar en Network    │
-│     → Saldo actualizado instantáneamente            │
-│  5. Ver historial de movimientos                    │
-│  ────────────────────────────────────────────────   │
+│  🎭 Roles: Docente, Padres 1, Padres 2              │
+│  ────────────────────────────────────────────────── │
+│  1. **Login como Docente:**                         │
+│     - Ir a Tareas y mostrar el filtro de alumnos.   │
+│     - Seleccionar "Todos" y mostrar la gráfica y    │
+│       la lista completa de tareas de todos.         │
+│  2. **Login como Padres 1 (Emma):**                 │
+│     - Ir a Cartera y mostrar saldo de Emma.         │
+│     - Ir a Tareas y mostrar la gráfica y tareas de Emma.│
+│  3. **Login como Padres 2 (Mateo):**                │
+│     - Ir a Cartera y mostrar saldo de Mateo (diferente).│
+│     - Ir a Tareas y mostrar la gráfica y tareas de Mateo.│
+│  ────────────────────────────────────────────────── │
 │  💬 Explicar mientras se muestra:                   │
-│  • Axios interceptor agrega token automáticamente   │
-│  • Validación de monto > 0 en ambos lados           │
-│  • Manejo de estados (loading, success, error)      │
+│  • Cómo el RBAC (Control de Roles) personaliza la UI.│
+│  • Cómo el backend asocia padres a hijos para       │
+│    mostrar datos correctos (seguridad).             │
+│  • La potencia de las gráficas para resúmenes.      │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
-│  MINUTO 3:00 - 5:00  │  DEMO CASO 2: Transacción  │
+│  MINUTO 3:30 - 5:30  │  DEMO CASO 2: Transacción  │
 ├─────────────────────────────────────────────────────┤
 │  🎭 Rol: Alumno                                     │
-│  ────────────────────────────────────────────────   │
-│  1. Ver catálogo de productos                       │
-│  2. Agregar 2 productos al carrito                  │
-│     • Sándwich de jamón: $35                        │
-│     • Jugo de naranja: $25                          │
-│  3. Intentar agregar REFRESCO (restringido)         │
-│     → ⚠️ ERROR 402: "Producto restringido"          │
-│     → Mostrar mensaje de error en UI                │
-│  4. Proceder a pagar solo productos permitidos      │
-│     → Mostrar POST /transacciones en Network        │
-│     → Validación de saldo suficiente                │
-│     → ✅ Compra exitosa                             │
-│     → Saldo descontado ($200 - $60 = $140)          │
-│  ────────────────────────────────────────────────   │
+│  ────────────────────────────────────────────────── │
+│  1. **Login como Alumno (Emma):**                   │
+│     - Ir a Tienda y ver catálogo.                   │
+│     - Agregar 2 productos al carrito.               │
+│     - **Intentar agregar REFRESCO (restringido):**  │
+│       → ⚠️ Mostrar error 402: "Producto restringido".│
+│  2. **Finalizar compra:**                           │
+│     - Pagar sólo productos permitidos.              │
+│     - Mostrar POST /transacciones en Network.       │
+│     - ✅ Compra exitosa.                            │
+│  3. **Verificar Saldo:**                            │
+│     - Ir a Cartera y mostrar saldo actualizado.     │
+│  ────────────────────────────────────────────────── │
 │  💬 Explicar mientras se muestra:                   │
 │  • Validación de restricciones en backend           │
 │  • Manejo de error 402 en frontend                  │
-│  • Actualización automática de saldo                │
-│  • Reglas de negocio implementadas correctamente    │
+│  • Actualización de saldo y stock en backend.       │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
-│  MINUTO 5:00 - 6:30  │  DEMO CASOS 3 y 4          │
+│  MINUTO 5:30 - 6:30  │  DEMO CASO 3: Tareas         │
 ├─────────────────────────────────────────────────────┤
-│  🎭 CASO 3: Tareas Académicas                       │
-│  ────────────────────────────────────────────────   │
-│  1. Ver lista de tareas pendientes                  │
-│  2. Seleccionar una tarea                           │
-│  3. Subir archivo PDF (multipart/form-data)         │
-│     → Mostrar request en Network (Content-Type)     │
-│     → ✅ Tarea entregada                            │
-│  ────────────────────────────────────────────────   │
-│  🎭 CASO 4: Mensajería (RÁPIDO)                     │
-│  ────────────────────────────────────────────────   │
-│  1. Padre envía mensaje a docente                   │
-│     → POST /mensajes                                │
-│  2. Ver mensaje en "Recibidos" (otro rol)           │
-│  3. Marcar como leído                               │
-│     → PATCH /mensajes/:id                           │
-│     → Actualización inmediata en UI                 │
+│  🎭 Roles: Alumno y Docente                         │
+│  ────────────────────────────────────────────────── │
+│  1. **Alumno (Emma):**                              │
+│     - Ir a Tareas, seleccionar una pendiente.       │
+│     - Subir archivo PDF (mostrar request multipart).│
+│     - ✅ Tarea entregada, gráfica y lista se actualizan.│
+│  2. **Docente:**                                    │
+│     - Login, ir a Tareas.                           │
+│     - Filtrar por Emma, ver su tarea como "entregada". │
+│     - Calificar la tarea (ej. 90/100).              │
+│     - ✅ Mostrar la llamada al backend para calificar.│
+│  3. **Alumno (Emma) de nuevo:**                     │
+│     - Recargar Tareas y mostrar la calificación y   │
+│       el estado "calificada".                       │
 │  ────────────────────────────────────────────────   │
 │  💬 Destacar:                                       │
 │  • Manejo de archivos (FormData)                    │
-│  • Uso del verbo PATCH                              │
-│  • Actualización de estado sin recargar página      │
+│  • Flujo completo de entrega y calificación.        │
+│  • Reactividad de la UI.                            │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
