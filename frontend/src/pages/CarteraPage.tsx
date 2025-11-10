@@ -24,30 +24,30 @@ const CarteraPage: React.FC = () => {
     metodoPago: 'tarjeta' as 'tarjeta' | 'transferencia',
   });
 
-  const usuario = authService.getUsuarioLocal();
-
   useEffect(() => {
+    const usuario = authService.getUsuarioLocal();
     if (!usuario) {
       navigate('/login');
       return;
     }
-    cargarCartera();
-  }, [usuario, navigate]);
 
-  const cargarCartera = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // En producción, el alumnoId vendría del contexto o del usuario actual
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
-      const data = await carteraService.getSaldo(alumnoId);
-      setCartera(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const cargarCartera = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // En producción, el alumnoId vendría del contexto o del usuario actual
+        const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
+        const data = await carteraService.getSaldo(alumnoId);
+        setCartera(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarCartera();
+  }, [navigate]);
 
   const handleDeposito = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +56,7 @@ const CarteraPage: React.FC = () => {
     setSuccess(null);
 
     try {
+      const usuario = authService.getUsuarioLocal();
       const monto = parseFloat(depositoForm.monto);
       if (isNaN(monto) || monto <= 0) {
         throw new Error('El monto debe ser un número positivo');
@@ -138,7 +139,7 @@ const CarteraPage: React.FC = () => {
         </Card>
 
         {/* Acciones */}
-        {usuario?.rol === 'padre' && (
+        {authService.getUsuarioLocal()?.rol === 'padre' &&
           <Card className="mb-6">
             <div className="flex justify-between items-center">
               <div>
@@ -152,7 +153,7 @@ const CarteraPage: React.FC = () => {
                 {showDepositForm ? 'Cancelar' : 'Depositar'}
               </Button>
             </div>
-
+ 
             {/* Formulario de Depósito */}
             {showDepositForm && (
               <form onSubmit={handleDeposito} className="mt-6 pt-6 border-t border-gray-200">
@@ -216,7 +217,7 @@ const CarteraPage: React.FC = () => {
               </form>
             )}
           </Card>
-        )}
+        }
 
         {/* Información Adicional */}
         <Card>

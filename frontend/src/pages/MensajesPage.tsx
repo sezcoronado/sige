@@ -29,15 +29,14 @@ const MensajesPage: React.FC = () => {
     contenido: '',
   });
 
-  const usuario = authService.getUsuarioLocal();
-
   useEffect(() => {
+    const usuario = authService.getUsuarioLocal();
     if (!usuario) {
       navigate('/login');
       return;
     }
     cargarMensajes();
-  }, [usuario, navigate, tipo]);
+  }, [navigate, tipo]);
 
   const cargarMensajes = async () => {
     try {

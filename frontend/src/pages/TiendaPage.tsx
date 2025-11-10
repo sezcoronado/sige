@@ -22,18 +22,18 @@ const TiendaPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const usuario = authService.getUsuarioLocal();
-
   useEffect(() => {
+    const usuario = authService.getUsuarioLocal();
     if (!usuario) {
       navigate('/login');
       return;
     }
     cargarDatos();
-  }, [usuario, navigate]);
+  }, [navigate]);
 
   const cargarDatos = async () => {
     try {
+      const usuario = authService.getUsuarioLocal();
       setLoading(true);
       setError(null);
 
@@ -101,6 +101,7 @@ const TiendaPage: React.FC = () => {
     setSuccess(null);
 
     try {
+      const usuario = authService.getUsuarioLocal();
       const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
       const items = carrito.map(item => ({
         productoId: item.productoId,

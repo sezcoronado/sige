@@ -22,18 +22,18 @@ const TareasPage: React.FC = () => {
   const [comentario, setComentario] = useState('');
   const [entregando, setEntregando] = useState(false);
 
-  const usuario = authService.getUsuarioLocal();
-
   useEffect(() => {
+    const usuario = authService.getUsuarioLocal();
     if (!usuario) {
       navigate('/login');
       return;
     }
     cargarTareas();
-  }, [usuario, navigate, filtro]);
+  }, [navigate, filtro]);
 
   const cargarTareas = async () => {
     try {
+      const usuario = authService.getUsuarioLocal();
       setLoading(true);
       setError(null);
       const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'usr_alumno01';
@@ -188,7 +188,7 @@ const TareasPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  {tarea.estado === 'pendiente' && usuario?.rol === 'alumno' && (
+                  {tarea.estado === 'pendiente' && authService.getUsuarioLocal()?.rol === 'alumno' && (
                     <Button
                       variant="primary"
                       size="sm"

@@ -7,17 +7,7 @@ import Card from '../components/common/Card';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const [usuario, setUsuario] = useState<any>(null);
-
-  useEffect(() => {
-    const user = authService.getUsuarioLocal();
-    if (!user) {
-      navigate('/login');
-    } else {
-      setUsuario(user);
-    }
-  }, [navigate]);
-
+  const usuario = authService.getUsuarioLocal();
   const handleLogout = async () => {
     await authService.logout();
     navigate('/login');
@@ -48,7 +38,7 @@ const DashboardPage: React.FC = () => {
       ),
       path: '/tienda',
       color: 'bg-blue-500',
-      roles: ['alumno'],
+      roles: ['alumno', 'padre'], // Added 'padre' for visibility
     },
     {
       title: 'Tareas Académicas',
@@ -60,7 +50,7 @@ const DashboardPage: React.FC = () => {
       ),
       path: '/tareas',
       color: 'bg-purple-500',
-      roles: ['alumno', 'docente'],
+      roles: ['alumno', 'docente', 'padre'], // Added 'padre' for visibility
     },
     {
       title: 'Mensajería',
