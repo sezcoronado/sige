@@ -27,6 +27,7 @@ const MensajesPage: React.FC = () => {
     destinatario: '',
     asunto: '',
     contenido: '',
+    manualDestino: '',
   });
 
   useEffect(() => {
@@ -74,9 +75,24 @@ const MensajesPage: React.FC = () => {
         'alumno': ['stdnt_alumno01'],  // ID del alumno
       };
 
-      const destinatarios = destinatarioMap[nuevoMensaje.destinatario];
-      if (!destinatarios || destinatarios.length === 0) {
-        throw new Error('Destinatario inválido');
+      let destinatarios: string[] = [];
+
+      if (nuevoMensaje.destinatario === 'manual') {
+        const manual = nuevoMensaje.manualDestino?.trim();
+        if (!manual) throw new Error('Debe escribir un destinatario manual.');
+
+        // Validar manual destination
+        const allIds = Object.values(destinatarioMap).flat();
+        if (!allIds.includes(manual)) {
+          throw new Error('El destinatario especificado no existe.');
+        }
+
+        destinatarios = [manual];
+      } else {
+        destinatarios = destinatarioMap[nuevoMensaje.destinatario] || [];
+        if (!destinatarios || destinatarios.length === 0) {
+          throw new Error('Destinatario inválido');
+        }
       }
 
       // Obtener el ID del usuario actual desde localStorage
@@ -101,7 +117,7 @@ const MensajesPage: React.FC = () => {
 
       setSuccess('Mensaje enviado exitosamente');
       setMostrarNuevo(false);
-      setNuevoMensaje({ destinatario: '', asunto: '', contenido: '' });
+      setNuevoMensaje({ destinatario: '', asunto: '', contenido: '', manualDestino: ''});
       if (tipo === 'enviados') {
         cargarMensajes();
       }
@@ -279,7 +295,21 @@ const MensajesPage: React.FC = () => {
                   <option value="padres">Padres</option>
                   <option value="docente">Docente</option>
                   <option value="alumno">Alumno</option>
+                  <option value="manual">Otro (escribir manualmente)</option>
                 </select>
+
+                {nuevoMensaje.destinatario === 'manual' && (
+                <input
+                  type="text"
+                  placeholder="Escribe el ID (correo del destinatario esta en desarrollo)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={nuevoMensaje.manualDestino || ''}
+                  onChange={(e) =>
+                    setNuevoMensaje({ ...nuevoMensaje, manualDestino: e.target.value })
+                  }
+                  required
+                />
+              )}
               </div>
 
               <Input
