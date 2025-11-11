@@ -37,8 +37,14 @@ const CarteraPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        // En producción, el alumnoId vendría del contexto o del usuario actual
-        const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
+        
+        // Obtener el ID del alumno correcto según el rol del usuario
+        const alumnoId = usuario.rol === 'alumno' 
+          ? usuario.id 
+          : usuario.alumnoAsociado;
+
+        if (!alumnoId) throw new Error("No se pudo identificar al alumno asociado.");
+
         const data = await carteraService.getSaldo(alumnoId);
         const historialData = await carteraService.getHistorial(alumnoId);
         setCartera(data);
@@ -66,7 +72,12 @@ const CarteraPage: React.FC = () => {
         throw new Error('El monto debe ser un número positivo');
       }
 
-      const alumnoId = 'stdnt_alumno01'; // El padre siempre deposita al alumno asociado
+      const alumnoId = usuario?.alumnoAsociado;
+      if (!alumnoId) {
+        throw new Error("No se pudo identificar al alumno para realizar el depósito.");
+      }
+
+      // El padre siempre deposita al alumno asociado
       const depositoData: DepositoRequest = {
         alumnoId,
         monto,

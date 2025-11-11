@@ -44,21 +44,25 @@ const TiendaPage: React.FC = () => {
       const productosData = await transaccionesService.getProductos(undefined, true);
       setProductos(productosData.items);
 
+      // Obtener el ID del alumno correcto
+      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : usuario?.alumnoAsociado;
+      if (!alumnoId) throw new Error("No se pudo identificar al alumno asociado.");
+
       // Cargar restricciones
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
       const restriccionesData = await transaccionesService.getRestricciones(alumnoId);
       const idsRestringidos = restriccionesData.items.map(r => r.productoId);
+      setRestricciones(idsRestringidos);
 
       // Cargar saldo de cartera
       const carteraData = await carteraService.getSaldo(alumnoId);
       setCartera(carteraData);
 
-      // Si el usuario es padre, obtener el nombre del alumno
+      // Si el usuario es padre, obtener el nombre del alumno (el backend ya lo provee)
       if (usuario?.rol === 'padres') {
-        const infoAlumno = await authService.getUserById(alumnoId);
-        setNombreAlumno(infoAlumno.nombre.split(' ')[0]);
+        // El nombre del alumno se puede obtener de otra forma si es necesario,
+        // por ahora, el nombre del padre es suficiente para el saludo.
+        // setNombreAlumno(infoAlumno.nombre.split(' ')[0]);
       }
-      setRestricciones(idsRestringidos);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -115,7 +119,11 @@ const TiendaPage: React.FC = () => {
 
     try {
       const usuario = authService.getUsuarioLocal();
-      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : 'stdnt_alumno01';
+      // Obtener el ID del alumno correcto
+      const alumnoId = usuario?.rol === 'alumno' ? usuario.id : usuario?.alumnoAsociado;
+      if (!alumnoId) throw new Error("No se pudo identificar al alumno para realizar la compra.");
+
+
       const items = carrito.map(item => ({
         productoId: item.productoId,
         cantidad: item.cantidad,
@@ -149,7 +157,8 @@ const TiendaPage: React.FC = () => {
     setRestricciones(nuevasRestricciones);
 
     try {
-      const alumnoId = 'stdnt_alumno01'; // En una app real, se obtendría el hijo asociado al padre
+      const alumnoId = usuario?.alumnoAsociado;
+      if (!alumnoId) throw new Error("No se pudo identificar al alumno para actualizar las restricciones.");
       await transaccionesService.updateRestricciones({
         alumnoId,
         productoId,
