@@ -12,6 +12,9 @@ const carteraRoutes = require('./src/routes/cartera.routes');
 const transaccionesRoutes = require('./src/routes/transacciones.routes');
 const tareasRoutes = require('./src/routes/tareas.routes');
 const mensajesRoutes = require('./src/routes/mensajes.routes');
+const calendarioRoutes = require('./src/routes/calendario.routes');
+const finanzasRoutes = require('./src/routes/finanzas.routes');
+const nominaRoutes = require('./src/routes/nomina.routes');
 
 // Importar middleware de errores
 const { errorHandler, notFoundHandler } = require('./src/middlewares/error.middleware');
@@ -62,6 +65,9 @@ app.use('/api/v1/cartera', carteraRoutes);
 app.use('/api/v1/transacciones', transaccionesRoutes);
 app.use('/api/v1/tareas', tareasRoutes);
 app.use('/api/v1/mensajes', mensajesRoutes);
+app.use('/api/v1/calendario', calendarioRoutes);
+app.use('/api/v1/finanzas', finanzasRoutes);
+app.use('/api/v1/nomina', nominaRoutes);
 
 // ========================================
 // MANEJO DE ERRORES

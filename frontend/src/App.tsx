@@ -10,6 +10,9 @@ import CarteraPage from './pages/CarteraPage';
 import TiendaPage from './pages/TiendaPage';
 import TareasPage from './pages/TareasPage';
 import MensajesPage from './pages/MensajesPage';
+import CalendarioPage from './pages/CalendarioPage';
+import FinanzasPage from './pages/FinanzasPage';
+import NominaPage from './pages/NominaPage';
 
 // Componente de ruta protegida
 interface PrivateRouteProps {
@@ -66,6 +69,30 @@ function App() {
           element={
             <PrivateRoute>
               <MensajesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/calendario"
+          element={
+            <PrivateRoute>
+              <CalendarioPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/finanzas"
+          element={
+            <PrivateRoute>
+              <FinanzasPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/nomina"
+          element={
+            <PrivateRoute>
+              <NominaPage />
             </PrivateRoute>
           }
         />

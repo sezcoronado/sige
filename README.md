@@ -132,7 +132,7 @@ npm install
 - postcss
 
 **Tiempo estimado:** 2-3 minutos
-
+ylpapae l
 ### 2.3 Crear archivo de variables de entorno
 
 ```bash

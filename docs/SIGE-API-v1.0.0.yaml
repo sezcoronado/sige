@@ -1,0 +1,3067 @@
+openapi: 3.0.3
+info:
+  title: Sistema Integral de Gestión Escolar (SIGE) - API RESTful
+  description: |
+    API RESTful completa para el Sistema Integral de Gestión Escolar (SIGE) 
+    para instituciones de nivel preescolar y primaria.
+    
+    **Funcionalidades principales:**
+    - Autenticación y gestión de usuarios (padres, docentes, alumnos, administración)
+    - Comunicación interna segura (mensajería)
+    - Gestión académica (tareas, calificaciones, evaluaciones)
+    - Publicación de anuncios y notificaciones
+    - Calendario escolar digital
+    - Administración financiera escolar
+    - Cartera digital del alumno
+    - Gestión de tienda escolar con restricciones
+    - Asistente virtual con IA
+    - Reportes y análisis predictivo
+    
+    Esta API sirve como contrato digital para el desarrollo, documentación 
+    y pruebas automatizadas del sistema SIGE.
+    
+  version: 1.0.0
+  contact:
+    name: Equipo 32 - SIGE Development Team
+    email: equipo32@tec.mx
+    url: https://github.com/equipo32/sige
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.sige.edu.mx/v1
+    description: Servidor de Producción
+  - url: https://staging-api.sige.edu.mx/v1
+    description: Servidor de Pruebas (Staging)
+  - url: https://dev-api.sige.edu.mx/v1
+    description: Servidor de Desarrollo
+  - url: http://localhost:3000/api/v1
+    description: Servidor Local de Desarrollo
+
+tags:
+  - name: Autenticación
+    description: Endpoints para autenticación y gestión de sesiones
+  - name: Usuarios
+    description: Gestión de usuarios del sistema (alumnos, padres, docentes, admin)
+  - name: Mensajería
+    description: Sistema de comunicación interna segura
+  - name: Tareas
+    description: Gestión de tareas académicas y entregas
+  - name: Anuncios
+    description: Publicación y consulta de anuncios escolares
+  - name: Calendario
+    description: Gestión del calendario escolar y eventos
+  - name: Finanzas
+    description: Administración financiera escolar (cuotas, pagos, adeudos)
+  - name: Cartera Digital
+    description: Cartera digital del alumno para tienda escolar
+  - name: Productos
+    description: Gestión de productos de la tienda escolar
+  - name: Transacciones
+    description: Registro de compras en tienda escolar
+  - name: Restricciones
+    description: Gestión de restricciones de compra por alumno
+  - name: Asistente IA
+    description: Asistente virtual con inteligencia artificial
+  - name: Reportes
+    description: Generación de reportes y análisis
+
+paths:
+  # ========================================
+  # AUTENTICACIÓN
+  # ========================================
+  /auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión en el sistema
+      description: |
+        Valida las credenciales del usuario y retorna un token JWT 
+        con periodo de expiración de 30 minutos.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              padre:
+                summary: Login de padre de familia
+                value:
+                  username: "padre@ejemplo.com"
+                  password: "Pass1234!"
+              docente:
+                summary: Login de docente
+                value:
+                  username: "docente@escuela.edu.mx"
+                  password: "SecurePass456"
+      responses:
+        '200':
+          description: Inicio de sesión exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/logout:
+    post:
+      tags: [Autenticación]
+      summary: Cerrar sesión
+      description: Invalida el token JWT actual del usuario
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Sesión cerrada exitosamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Autenticación]
+      summary: Renovar token de autenticación
+      description: Genera un nuevo token JWT antes de que expire el actual
+      operationId: refreshToken
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token renovado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================
+  # USUARIOS
+  # ========================================
+  /usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios del sistema
+      description: Retorna una lista paginada y filtrable de usuarios
+      operationId: listUsuarios
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - in: query
+          name: rol
+          schema:
+            type: string
+            enum: [padre, docente, alumno, administrador]
+          description: Filtrar por rol de usuario
+        - in: query
+          name: activo
+          schema:
+            type: boolean
+          description: Filtrar por estado activo/inactivo
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Buscar por nombre o email
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Usuarios]
+      summary: Crear nuevo usuario
+      description: Registra un nuevo usuario en el sistema
+      operationId: createUsuario
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreate'
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /usuarios/{usuarioId}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuario por ID
+      description: Retorna los detalles de un usuario específico
+      operationId: getUsuarioById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UsuarioIdParam'
+      responses:
+        '200':
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Usuarios]
+      summary: Actualizar usuario completo
+      description: Actualiza toda la información de un usuario
+      operationId: updateUsuario
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UsuarioIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioUpdate'
+      responses:
+        '200':
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Usuarios]
+      summary: Actualizar usuario parcialmente
+      description: Actualiza campos específicos de un usuario
+      operationId: patchUsuario
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UsuarioIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioPatch'
+      responses:
+        '200':
+          description: Usuario actualizado parcialmente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Usuarios]
+      summary: Desactivar usuario
+      description: Realiza un borrado lógico del usuario (no elimina físicamente)
+      operationId: deleteUsuario
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UsuarioIdParam'
+      responses:
+        '204':
+          description: Usuario desactivado exitosamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # MENSAJERÍA INTERNA
+  # ========================================
+  /mensajes:
+    get:
+      tags: [Mensajería]
+      summary: Listar mensajes del usuario
+      description: Retorna los mensajes recibidos o enviados por el usuario autenticado
+      operationId: listMensajes
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [recibidos, enviados]
+          description: Tipo de mensajes a listar
+        - in: query
+          name: leido
+          schema:
+            type: boolean
+          description: Filtrar por mensajes leídos/no leídos
+      responses:
+        '200':
+          description: Lista de mensajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Mensajería]
+      summary: Enviar mensaje
+      description: Envía un mensaje a uno o varios destinatarios
+      operationId: sendMensaje
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MensajeCreate'
+      responses:
+        '201':
+          description: Mensaje enviado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /mensajes/{mensajeId}:
+    get:
+      tags: [Mensajería]
+      summary: Obtener mensaje por ID
+      description: Retorna los detalles de un mensaje específico
+      operationId: getMensajeById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MensajeIdParam'
+      responses:
+        '200':
+          description: Mensaje encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Mensajería]
+      summary: Marcar mensaje como leído
+      description: Actualiza el estado de lectura de un mensaje
+      operationId: markMensajeLeido
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MensajeIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                leido:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # TAREAS ACADÉMICAS
+  # ========================================
+  /tareas:
+    get:
+      tags: [Tareas]
+      summary: Listar tareas
+      description: Retorna lista de tareas según el rol del usuario
+      operationId: listTareas
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - in: query
+          name: estado
+          schema:
+            type: string
+            enum: [pendiente, entregada, calificada]
+          description: Filtrar por estado de la tarea
+        - in: query
+          name: materia
+          schema:
+            type: string
+          description: Filtrar por materia
+        - in: query
+          name: alumnoId
+          schema:
+            type: string
+          description: Filtrar tareas de un alumno específico (solo para docentes/padres)
+      responses:
+        '200':
+          description: Lista de tareas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TareaListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Tareas]
+      summary: Crear nueva tarea
+      description: El docente crea una nueva tarea académica
+      operationId: createTarea
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TareaCreate'
+      responses:
+        '201':
+          description: Tarea creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tareas/{tareaId}:
+    get:
+      tags: [Tareas]
+      summary: Obtener tarea por ID
+      description: Retorna los detalles de una tarea específica
+      operationId: getTareaById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TareaIdParam'
+      responses:
+        '200':
+          description: Tarea encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Tareas]
+      summary: Actualizar tarea
+      description: El docente actualiza una tarea existente
+      operationId: updateTarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TareaIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TareaUpdate'
+      responses:
+        '200':
+          description: Tarea actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Tareas]
+      summary: Eliminar tarea
+      description: El docente elimina una tarea (borrado lógico)
+      operationId: deleteTarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TareaIdParam'
+      responses:
+        '204':
+          description: Tarea eliminada exitosamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tareas/{tareaId}/entregar:
+    post:
+      tags: [Tareas]
+      summary: Entregar tarea
+      description: El alumno entrega una tarea asignada
+      operationId: entregarTarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TareaIdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+                  description: Archivo de la entrega
+                comentario:
+                  type: string
+                  description: Comentario opcional del alumno
+      responses:
+        '200':
+          description: Tarea entregada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entrega'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tareas/{tareaId}/calificar:
+    post:
+      tags: [Tareas]
+      summary: Calificar tarea
+      description: El docente califica una tarea entregada
+      operationId: calificarTarea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TareaIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Calificacion'
+      responses:
+        '200':
+          description: Tarea calificada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # ANUNCIOS
+  # ========================================
+  /anuncios:
+    get:
+      tags: [Anuncios]
+      summary: Listar anuncios
+      description: Retorna lista de anuncios del usuario según su audiencia
+      operationId: listAnuncios
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [general, grupo, individual]
+          description: Filtrar por tipo de anuncio
+      responses:
+        '200':
+          description: Lista de anuncios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnuncioListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Anuncios]
+      summary: Publicar anuncio
+      description: Docente o admin publica un nuevo anuncio
+      operationId: createAnuncio
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnuncioCreate'
+      responses:
+        '201':
+          description: Anuncio publicado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Anuncio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /anuncios/{anuncioId}:
+    get:
+      tags: [Anuncios]
+      summary: Obtener anuncio por ID
+      description: Retorna los detalles de un anuncio específico
+      operationId: getAnuncioById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AnuncioIdParam'
+      responses:
+        '200':
+          description: Anuncio encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Anuncio'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Anuncios]
+      summary: Eliminar anuncio
+      description: Elimina un anuncio publicado
+      operationId: deleteAnuncio
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AnuncioIdParam'
+      responses:
+        '204':
+          description: Anuncio eliminado exitosamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # CALENDARIO ESCOLAR
+  # ========================================
+  /calendario/eventos:
+    get:
+      tags: [Calendario]
+      summary: Listar eventos del calendario
+      description: Retorna eventos del calendario escolar con filtros
+      operationId: listEventos
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: fechaInicio
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha de inicio del rango
+        - in: query
+          name: fechaFin
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Fecha de fin del rango
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [academico, extracurricular, general, festivo]
+          description: Filtrar por tipo de evento
+      responses:
+        '200':
+          description: Lista de eventos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Calendario]
+      summary: Crear evento en calendario
+      description: Admin o docente crea un nuevo evento
+      operationId: createEvento
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoCreate'
+      responses:
+        '201':
+          description: Evento creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /calendario/eventos/{eventoId}:
+    get:
+      tags: [Calendario]
+      summary: Obtener evento por ID
+      description: Retorna los detalles de un evento específico
+      operationId: getEventoById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventoIdParam'
+      responses:
+        '200':
+          description: Evento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Calendario]
+      summary: Actualizar evento
+      description: Actualiza un evento del calendario
+      operationId: updateEvento
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventoIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoUpdate'
+      responses:
+        '200':
+          description: Evento actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Calendario]
+      summary: Eliminar evento
+      description: Elimina un evento del calendario
+      operationId: deleteEvento
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/EventoIdParam'
+      responses:
+        '204':
+          description: Evento eliminado exitosamente
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # FINANZAS ESCOLARES
+  # ========================================
+  /finanzas/cuotas:
+    get:
+      tags: [Finanzas]
+      summary: Listar cuotas escolares
+      description: Retorna lista de cuotas y adeudos del usuario o alumno
+      operationId: listCuotas
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          schema:
+            type: string
+          description: ID del alumno (para padres con varios hijos)
+        - in: query
+          name: estado
+          schema:
+            type: string
+            enum: [pendiente, pagado, vencido]
+          description: Filtrar por estado de pago
+      responses:
+        '200':
+          description: Lista de cuotas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuotaListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /finanzas/pagos:
+    get:
+      tags: [Finanzas]
+      summary: Historial de pagos
+      description: Retorna el historial de pagos realizados
+      operationId: listPagos
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - in: query
+          name: alumnoId
+          schema:
+            type: string
+          description: Filtrar pagos de un alumno específico
+      responses:
+        '200':
+          description: Historial de pagos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Finanzas]
+      summary: Realizar pago
+      description: Procesa un pago de cuota escolar mediante pasarela
+      operationId: createPago
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PagoCreate'
+      responses:
+        '201':
+          description: Pago procesado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          description: Pago rechazado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /finanzas/pagos/{pagoId}/comprobante:
+    post:
+      tags: [Finanzas]
+      summary: Subir comprobante de pago
+      description: Padre sube comprobante digital de transferencia bancaria
+      operationId: uploadComprobante
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PagoIdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+                  description: Archivo del comprobante (PDF, JPG, PNG)
+      responses:
+        '200':
+          description: Comprobante subido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pago'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================
+  # CARTERA DIGITAL
+  # ========================================
+  /cartera:
+    get:
+      tags: [Cartera Digital]
+      summary: Consultar saldo de cartera
+      description: Retorna el saldo actual de la cartera digital del alumno
+      operationId: getCarteraSaldo
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+      responses:
+        '200':
+          description: Información de la cartera
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartera'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /cartera/depositar:
+    post:
+      tags: [Cartera Digital]
+      summary: Depositar saldo a cartera
+      description: Padre deposita saldo a la cartera digital del alumno
+      operationId: depositarCartera
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositoCartera'
+      responses:
+        '200':
+          description: Depósito realizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cartera'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /cartera/historial:
+    get:
+      tags: [Cartera Digital]
+      summary: Historial de transacciones de cartera
+      description: Retorna el historial detallado de movimientos de la cartera
+      operationId: getCarteraHistorial
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Historial de transacciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransaccionCarteraListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================
+  # PRODUCTOS TIENDA ESCOLAR
+  # ========================================
+  /productos:
+    get:
+      tags: [Productos]
+      summary: Listar productos de tienda
+      description: Retorna catálogo de productos disponibles
+      operationId: listProductos
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: categoria
+          schema:
+            type: string
+          description: Filtrar por categoría
+        - in: query
+          name: disponible
+          schema:
+            type: boolean
+          description: Solo productos con stock
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Buscar por nombre
+      responses:
+        '200':
+          description: Catálogo de productos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Productos]
+      summary: Crear producto
+      description: Admin registra un nuevo producto en el catálogo
+      operationId: createProducto
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoCreate'
+      responses:
+        '201':
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /productos/{productoId}:
+    get:
+      tags: [Productos]
+      summary: Obtener producto por ID
+      description: Retorna detalles completos del producto incluyendo información nutricional
+      operationId: getProductoById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductoIdParam'
+      responses:
+        '200':
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Productos]
+      summary: Actualizar producto
+      description: Admin actualiza información del producto
+      operationId: updateProducto
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductoIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoUpdate'
+      responses:
+        '200':
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Productos]
+      summary: Eliminar producto
+      description: Admin elimina producto del catálogo (borrado lógico)
+      operationId: deleteProducto
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductoIdParam'
+      responses:
+        '204':
+          description: Producto eliminado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # TRANSACCIONES TIENDA
+  # ========================================
+  /transacciones:
+    post:
+      tags: [Transacciones]
+      summary: Registrar compra en tienda
+      description: POS registra una compra utilizando la cartera digital del alumno
+      operationId: createTransaccion
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransaccionCreate'
+      responses:
+        '201':
+          description: Compra registrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaccion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          description: Saldo insuficiente o producto restringido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Transacciones]
+      summary: Listar transacciones
+      description: Retorna historial de compras del alumno en tienda
+      operationId: listTransacciones
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Historial de transacciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransaccionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================
+  # RESTRICCIONES DE COMPRA
+  # ========================================
+  /restricciones:
+    get:
+      tags: [Restricciones]
+      summary: Listar restricciones del alumno
+      description: Retorna productos restringidos para un alumno
+      operationId: listRestricciones
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+      responses:
+        '200':
+          description: Lista de restricciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestriccionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Restricciones]
+      summary: Crear restricción de compra
+      description: Padre establece restricción de producto para su hijo
+      operationId: createRestriccion
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestriccionCreate'
+      responses:
+        '201':
+          description: Restricción creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restriccion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /restricciones/{restriccionId}:
+    delete:
+      tags: [Restricciones]
+      summary: Eliminar restricción
+      description: Padre elimina una restricción de producto
+      operationId: deleteRestriccion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RestriccionIdParam'
+      responses:
+        '204':
+          description: Restricción eliminada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # ASISTENTE VIRTUAL CON IA
+  # ========================================
+  /asistente/consulta:
+    post:
+      tags: [Asistente IA]
+      summary: Realizar consulta al asistente virtual
+      description: Usuario hace una pregunta al asistente con IA
+      operationId: consultarAsistente
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaAsistente'
+      responses:
+        '200':
+          description: Respuesta del asistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaAsistente'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /asistente/analisis-alumno/{alumnoId}:
+    get:
+      tags: [Asistente IA]
+      summary: Análisis predictivo del alumno
+      description: Obtiene análisis de riesgo académico y recomendaciones del alumno
+      operationId: getAnalisisAlumno
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+      responses:
+        '200':
+          description: Análisis generado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalisisAlumno'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # REPORTES Y ANÁLISIS
+  # ========================================
+  /reportes/academico:
+    get:
+      tags: [Reportes]
+      summary: Reporte académico del alumno
+      description: Genera reporte detallado de desempeño académico
+      operationId: getReporteAcademico
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+        - in: query
+          name: periodo
+          schema:
+            type: string
+          description: Periodo escolar (ejemplo "2025-1")
+      responses:
+        '200':
+          description: Reporte académico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteAcademico'
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reportes/financiero:
+    get:
+      tags: [Reportes]
+      summary: Reporte financiero
+      description: Genera reporte de pagos y adeudos del alumno
+      operationId: getReporteFinanciero
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Reporte financiero
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteFinanciero'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reportes/consumos:
+    get:
+      tags: [Reportes]
+      summary: Reporte de consumos en tienda
+      description: Genera reporte detallado de consumos del alumno
+      operationId: getReporteConsumos
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: alumnoId
+          required: true
+          schema:
+            type: string
+          description: ID del alumno
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Reporte de consumos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteConsumos'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ========================================
+# COMPONENTES REUTILIZABLES
+# ========================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT obtenido mediante el endpoint /auth/login.
+        El token expira en 30 minutos de inactividad.
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Número de página para paginación
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    PageSizeParam:
+      name: pageSize
+      in: query
+      description: Cantidad de elementos por página
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+
+    UsuarioIdParam:
+      name: usuarioId
+      in: path
+      required: true
+      description: Identificador único del usuario
+      schema:
+        type: string
+        pattern: '^usr_[a-zA-Z0-9]+$'
+      example: "usr_12345"
+
+    MensajeIdParam:
+      name: mensajeId
+      in: path
+      required: true
+      description: Identificador único del mensaje
+      schema:
+        type: string
+        pattern: '^msg_[a-zA-Z0-9]+$'
+      example: "msg_30012"
+
+    TareaIdParam:
+      name: tareaId
+      in: path
+      required: true
+      description: Identificador único de la tarea
+      schema:
+        type: string
+        pattern: '^tsk_[a-zA-Z0-9]+$'
+      example: "tsk_5001"
+
+    AnuncioIdParam:
+      name: anuncioId
+      in: path
+      required: true
+      description: Identificador único del anuncio
+      schema:
+        type: string
+        pattern: '^ann_[a-zA-Z0-9]+$'
+      example: "ann_7003"
+
+    EventoIdParam:
+      name: eventoId
+      in: path
+      required: true
+      description: Identificador único del evento
+      schema:
+        type: string
+        pattern: '^evt_[a-zA-Z0-9]+$'
+      example: "evt_9001"
+
+    PagoIdParam:
+      name: pagoId
+      in: path
+      required: true
+      description: Identificador único del pago
+      schema:
+        type: string
+        pattern: '^pay_[a-zA-Z0-9]+$'
+      example: "pay_120045"
+
+    ProductoIdParam:
+      name: productoId
+      in: path
+      required: true
+      description: Identificador único del producto
+      schema:
+        type: string
+        pattern: '^prd_[a-zA-Z0-9]+$'
+      example: "prd_44005"
+
+    RestriccionIdParam:
+      name: restriccionId
+      in: path
+      required: true
+      description: Identificador único de la restricción
+      schema:
+        type: string
+        pattern: '^res_[a-zA-Z0-9]+$'
+      example: "res_88015"
+
+  responses:
+    BadRequest:
+      description: Solicitud incorrecta - Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: "BAD_REQUEST"
+            mensaje: "Los datos enviados no son válidos"
+            detalles:
+              - campo: "email"
+                error: "Formato de email inválido"
+
+    Unauthorized:
+      description: No autorizado - Token inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: "UNAUTHORIZED"
+            mensaje: "Token de autenticación inválido o expirado"
+
+    Forbidden:
+      description: Prohibido - Sin permisos para realizar esta acción
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: "FORBIDDEN"
+            mensaje: "No tiene permisos para realizar esta acción"
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: "NOT_FOUND"
+            mensaje: "El recurso solicitado no existe"
+
+  schemas:
+    # ========================================
+    # ESQUEMAS DE AUTENTICACIÓN
+    # ========================================
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          format: email
+          description: Correo electrónico del usuario
+          example: "padre@ejemplo.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Contraseña del usuario
+          example: "Password123!"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token JWT para autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresIn:
+          type: integer
+          description: Tiempo de expiración del token en segundos
+          example: 1800
+        usuario:
+          $ref: '#/components/schemas/UsuarioBasico'
+
+    # ========================================
+    # ESQUEMAS DE USUARIOS
+    # ========================================
+    Usuario:
+      type: object
+      description: Usuario del sistema SIGE
+      properties:
+        id:
+          type: string
+          example: "usr_12345"
+        nombre:
+          type: string
+          example: "Ivette Merlos Araujo"
+        email:
+          type: string
+          format: email
+          example: "ivette.merlos@ejemplo.com"
+        rol:
+          type: string
+          enum: [padre, docente, alumno, administrador]
+          example: "padre"
+        activo:
+          type: boolean
+          example: true
+        telefono:
+          type: string
+          example: "+52 55 1234 5678"
+        fechaRegistro:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00Z"
+        ultimoAcceso:
+          type: string
+          format: date-time
+          example: "2025-11-02T14:23:15Z"
+
+    UsuarioBasico:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "usr_12345"
+        nombre:
+          type: string
+          example: "Ivette Merlos"
+        email:
+          type: string
+          format: email
+          example: "ivette@ejemplo.com"
+        rol:
+          type: string
+          enum: [padre, docente, alumno, administrador]
+          example: "padre"
+
+    UsuarioCreate:
+      type: object
+      required:
+        - nombre
+        - email
+        - rol
+        - password
+      properties:
+        nombre:
+          type: string
+          minLength: 3
+          example: "Carlos Ávila Gutiérrez"
+        email:
+          type: string
+          format: email
+          example: "carlos@ejemplo.com"
+        rol:
+          type: string
+          enum: [padre, docente, alumno, administrador]
+          example: "docente"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "SecurePass456!"
+        telefono:
+          type: string
+          example: "+52 55 8765 4321"
+
+    UsuarioUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: "Carlos Isaac Ávila"
+        email:
+          type: string
+          format: email
+          example: "carlos.nuevo@ejemplo.com"
+        telefono:
+          type: string
+          example: "+52 55 9999 8888"
+        activo:
+          type: boolean
+          example: true
+
+    UsuarioPatch:
+      type: object
+      properties:
+        activo:
+          type: boolean
+          description: Activar o desactivar usuario
+          example: false
+
+    UsuarioListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Número total de usuarios
+          example: 150
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Usuario'
+
+    # ========================================
+    # ESQUEMAS DE MENSAJERÍA
+    # ========================================
+    Mensaje:
+      type: object
+      description: Mensaje del sistema de comunicación interna
+      properties:
+        id:
+          type: string
+          example: "msg_30012"
+        remitenteId:
+          type: string
+          example: "usr_12345"
+        remitente:
+          $ref: '#/components/schemas/UsuarioBasico'
+        destinatarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsuarioBasico'
+        asunto:
+          type: string
+          example: "Consulta sobre tarea de matemáticas"
+        contenido:
+          type: string
+          example: "Buenos días, quisiera saber si la tarea debe incluir gráficas..."
+        leido:
+          type: boolean
+          example: false
+        fechaEnvio:
+          type: string
+          format: date-time
+          example: "2025-11-02T09:15:00Z"
+        fechaLectura:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+
+    MensajeCreate:
+      type: object
+      required:
+        - destinatariosIds
+        - asunto
+        - contenido
+      properties:
+        destinatariosIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["usr_67890", "usr_54321"]
+        asunto:
+          type: string
+          minLength: 3
+          maxLength: 200
+          example: "Consulta sobre tarea"
+        contenido:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          example: "Buenos días, tengo una duda sobre la tarea..."
+
+    MensajeListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 45
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mensaje'
+
+    # ========================================
+    # ESQUEMAS DE TAREAS
+    # ========================================
+    Tarea:
+      type: object
+      description: Tarea académica asignada por el docente
+      properties:
+        id:
+          type: string
+          example: "tsk_5001"
+        titulo:
+          type: string
+          example: "Problemas de fracciones"
+        descripcion:
+          type: string
+          example: "Resolver los ejercicios 1-15 del libro página 45"
+        materia:
+          type: string
+          example: "Matemáticas"
+        docenteId:
+          type: string
+          example: "usr_docente01"
+        docente:
+          $ref: '#/components/schemas/UsuarioBasico'
+        fechaAsignacion:
+          type: string
+          format: date-time
+          example: "2025-10-28T08:00:00Z"
+        fechaEntrega:
+          type: string
+          format: date-time
+          example: "2025-11-05T23:59:59Z"
+        estado:
+          type: string
+          enum: [pendiente, entregada, calificada]
+          example: "pendiente"
+        calificacion:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          nullable: true
+          example: null
+        comentarioDocente:
+          type: string
+          nullable: true
+          example: null
+        archivoAdjunto:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://api.sige.edu.mx/files/tarea_5001.pdf"
+
+    TareaCreate:
+      type: object
+      required:
+        - titulo
+        - descripcion
+        - materia
+        - fechaEntrega
+      properties:
+        titulo:
+          type: string
+          minLength: 5
+          maxLength: 200
+          example: "Ecuaciones de primer grado"
+        descripcion:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          example: "Resolver los problemas del 1 al 20 de la página 78"
+        materia:
+          type: string
+          example: "Álgebra"
+        fechaEntrega:
+          type: string
+          format: date-time
+          example: "2025-11-10T23:59:59Z"
+        grupoId:
+          type: string
+          example: "grp_6toA"
+
+    TareaUpdate:
+      type: object
+      properties:
+        titulo:
+          type: string
+          example: "Ecuaciones lineales - Actualizado"
+        descripcion:
+          type: string
+          example: "Resolver solo ejercicios impares del 1 al 19"
+        fechaEntrega:
+          type: string
+          format: date-time
+          example: "2025-11-12T23:59:59Z"
+
+    Entrega:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "ent_7890"
+        tareaId:
+          type: string
+          example: "tsk_5001"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        fechaEntrega:
+          type: string
+          format: date-time
+          example: "2025-11-04T18:30:00Z"
+        archivo:
+          type: string
+          format: uri
+          example: "https://api.sige.edu.mx/files/entrega_7890.pdf"
+        comentario:
+          type: string
+          example: "Tarea completada con todas las gráficas"
+
+    Calificacion:
+      type: object
+      required:
+        - alumnoId
+        - calificacion
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        calificacion:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 95.5
+        comentario:
+          type: string
+          maxLength: 500
+          example: "Excelente trabajo, muy bien explicadas las gráficas"
+
+    TareaListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 28
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tarea'
+
+    # ========================================
+    # ESQUEMAS DE ANUNCIOS
+    # ========================================
+    Anuncio:
+      type: object
+      description: Anuncio o comunicado escolar
+      properties:
+        id:
+          type: string
+          example: "ann_7003"
+        titulo:
+          type: string
+          example: "Suspensión de clases"
+        contenido:
+          type: string
+          example: "Se suspenden clases el día viernes 8 de noviembre por junta docente"
+        tipo:
+          type: string
+          enum: [general, grupo, individual]
+          example: "general"
+        prioridad:
+          type: string
+          enum: [baja, media, alta, urgente]
+          example: "alta"
+        autorId:
+          type: string
+          example: "usr_admin01"
+        autor:
+          $ref: '#/components/schemas/UsuarioBasico'
+        audiencia:
+          type: array
+          items:
+            type: string
+          example: ["Todos"]
+        fechaPublicacion:
+          type: string
+          format: date-time
+          example: "2025-11-01T14:00:00Z"
+        fechaExpiracion:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-11-08T23:59:59Z"
+
+    AnuncioCreate:
+      type: object
+      required:
+        - titulo
+        - contenido
+        - tipo
+      properties:
+        titulo:
+          type: string
+          minLength: 5
+          maxLength: 200
+          example: "Reunión de padres de familia"
+        contenido:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          example: "Se convoca a reunión el día jueves 7 de noviembre a las 18:00 hrs"
+        tipo:
+          type: string
+          enum: [general, grupo, individual]
+          example: "general"
+        prioridad:
+          type: string
+          enum: [baja, media, alta, urgente]
+          default: media
+          example: "alta"
+        audienciaIds:
+          type: array
+          items:
+            type: string
+          example: ["grp_6toA", "grp_6toB"]
+        fechaExpiracion:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-11-07T23:59:59Z"
+
+    AnuncioListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 12
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Anuncio'
+
+    # ========================================
+    # ESQUEMAS DE CALENDARIO
+    # ========================================
+    Evento:
+      type: object
+      description: Evento del calendario escolar
+      properties:
+        id:
+          type: string
+          example: "evt_9001"
+        titulo:
+          type: string
+          example: "Examen final de Matemáticas"
+        descripcion:
+          type: string
+          example: "Examen correspondiente al segundo bimestre"
+        tipo:
+          type: string
+          enum: [academico, extracurricular, general, festivo]
+          example: "academico"
+        fechaInicio:
+          type: string
+          format: date-time
+          example: "2025-11-15T09:00:00Z"
+        fechaFin:
+          type: string
+          format: date-time
+          example: "2025-11-15T11:00:00Z"
+        todoElDia:
+          type: boolean
+          example: false
+        lugar:
+          type: string
+          example: "Aula 302"
+        creadorId:
+          type: string
+          example: "usr_admin01"
+        creador:
+          $ref: '#/components/schemas/UsuarioBasico'
+        participantes:
+          type: array
+          items:
+            type: string
+          example: ["grp_6toA"]
+
+    EventoCreate:
+      type: object
+      required:
+        - titulo
+        - tipo
+        - fechaInicio
+        - fechaFin
+      properties:
+        titulo:
+          type: string
+          minLength: 3
+          maxLength: 200
+          example: "Festival de primavera"
+        descripcion:
+          type: string
+          maxLength: 1000
+          example: "Presentación de bailes y obras de teatro"
+        tipo:
+          type: string
+          enum: [academico, extracurricular, general, festivo]
+          example: "extracurricular"
+        fechaInicio:
+          type: string
+          format: date-time
+          example: "2025-11-20T10:00:00Z"
+        fechaFin:
+          type: string
+          format: date-time
+          example: "2025-11-20T14:00:00Z"
+        todoElDia:
+          type: boolean
+          default: false
+          example: false
+        lugar:
+          type: string
+          example: "Patio principal"
+        participantesIds:
+          type: array
+          items:
+            type: string
+          example: ["Todos"]
+
+    EventoUpdate:
+      type: object
+      properties:
+        titulo:
+          type: string
+          example: "Festival de primavera - POSPUESTO"
+        descripcion:
+          type: string
+          example: "Se pospone por mal clima"
+        fechaInicio:
+          type: string
+          format: date-time
+          example: "2025-11-22T10:00:00Z"
+        fechaFin:
+          type: string
+          format: date-time
+          example: "2025-11-22T14:00:00Z"
+        lugar:
+          type: string
+          example: "Auditorio techado"
+
+    EventoListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 35
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evento'
+
+    # ========================================
+    # ESQUEMAS DE FINANZAS
+    # ========================================
+    Cuota:
+      type: object
+      description: Cuota escolar pendiente o pagada
+      properties:
+        id:
+          type: string
+          example: "cta_890"
+        concepto:
+          type: string
+          example: "Colegiatura Noviembre 2025"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        alumno:
+          $ref: '#/components/schemas/UsuarioBasico'
+        monto:
+          type: number
+          format: float
+          example: 3500.00
+        moneda:
+          type: string
+          example: "MXN"
+        fechaVencimiento:
+          type: string
+          format: date
+          example: "2025-11-05"
+        estado:
+          type: string
+          enum: [pendiente, pagado, vencido]
+          example: "pendiente"
+        fechaPago:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+
+    CuotaListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 8
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cuota'
+
+    Pago:
+      type: object
+      description: Pago realizado o procesado
+      properties:
+        id:
+          type: string
+          example: "pay_120045"
+        cuotaId:
+          type: string
+          example: "cta_890"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        monto:
+          type: number
+          format: float
+          example: 3500.00
+        moneda:
+          type: string
+          example: "MXN"
+        metodoPago:
+          type: string
+          enum: [tarjeta, transferencia, efectivo, otro]
+          example: "tarjeta"
+        estado:
+          type: string
+          enum: [procesando, exitoso, rechazado]
+          example: "exitoso"
+        fechaPago:
+          type: string
+          format: date-time
+          example: "2025-11-02T15:30:00Z"
+        referencia:
+          type: string
+          example: "REF-2025-110245"
+        comprobante:
+          type: string
+          format: uri
+          nullable: true
+          example: null
+
+    PagoCreate:
+      type: object
+      required:
+        - cuotaId
+        - monto
+        - metodoPago
+      properties:
+        cuotaId:
+          type: string
+          example: "cta_890"
+        monto:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 3500.00
+        metodoPago:
+          type: string
+          enum: [tarjeta, transferencia, efectivo, otro]
+          example: "tarjeta"
+        datosPago:
+          type: object
+          description: Datos específicos del método de pago (tokenizado)
+          properties:
+            token:
+              type: string
+              example: "tok_1234567890abcdef"
+
+    PagoListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 24
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pago'
+
+    # ========================================
+    # ESQUEMAS DE CARTERA DIGITAL
+    # ========================================
+    Cartera:
+      type: object
+      description: Cartera digital del alumno para tienda escolar
+      properties:
+        id:
+          type: string
+          example: "wlt_22001"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        alumno:
+          $ref: '#/components/schemas/UsuarioBasico'
+        saldo:
+          type: number
+          format: float
+          example: 250.75
+        moneda:
+          type: string
+          example: "MXN"
+        limiteGastoSemanal:
+          type: number
+          format: float
+          nullable: true
+          example: 500.00
+        ultimaActualizacion:
+          type: string
+          format: date-time
+          example: "2025-11-02T12:15:00Z"
+
+    DepositoCartera:
+      type: object
+      required:
+        - alumnoId
+        - monto
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        monto:
+          type: number
+          format: float
+          minimum: 1.00
+          example: 300.00
+        metodoPago:
+          type: string
+          enum: [tarjeta, transferencia]
+          example: "tarjeta"
+        datosPago:
+          type: object
+          properties:
+            token:
+              type: string
+              example: "tok_deposito123"
+
+    TransaccionCartera:
+      type: object
+      description: Movimiento en la cartera digital
+      properties:
+        id:
+          type: string
+          example: "txn_33021"
+        carteraId:
+          type: string
+          example: "wlt_22001"
+        tipo:
+          type: string
+          enum: [deposito, compra, ajuste]
+          example: "compra"
+        monto:
+          type: number
+          format: float
+          example: -15.50
+        saldoAnterior:
+          type: number
+          format: float
+          example: 266.25
+        saldoNuevo:
+          type: number
+          format: float
+          example: 250.75
+        descripcion:
+          type: string
+          example: "Compra en tienda escolar"
+        fecha:
+          type: string
+          format: date-time
+          example: "2025-11-02T10:45:00Z"
+
+    TransaccionCarteraListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 67
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransaccionCartera'
+
+    # ========================================
+    # ESQUEMAS DE PRODUCTOS
+    # ========================================
+    Producto:
+      type: object
+      description: Producto de la tienda escolar
+      properties:
+        id:
+          type: string
+          example: "prd_44005"
+        nombre:
+          type: string
+          example: "Sándwich de jamón"
+        descripcion:
+          type: string
+          example: "Sándwich preparado con pan integral, jamón de pavo y vegetales"
+        categoria:
+          type: string
+          example: "Alimentos"
+        precio:
+          type: number
+          format: float
+          example: 35.00
+        moneda:
+          type: string
+          example: "MXN"
+        stock:
+          type: integer
+          example: 25
+        disponible:
+          type: boolean
+          example: true
+        imagen:
+          type: string
+          format: uri
+          example: "https://api.sige.edu.mx/images/productos/sandwich.jpg"
+        informacionNutricional:
+          type: object
+          properties:
+            calorias:
+              type: integer
+              example: 320
+            proteinas:
+              type: number
+              example: 18.5
+            carbohidratos:
+              type: number
+              example: 35.2
+            grasas:
+              type: number
+              example: 9.8
+        alergenos:
+          type: array
+          items:
+            type: string
+          example: ["gluten", "huevo"]
+
+    ProductoCreate:
+      type: object
+      required:
+        - nombre
+        - categoria
+        - precio
+      properties:
+        nombre:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "Jugo de naranja natural"
+        descripcion:
+          type: string
+          maxLength: 500
+          example: "Jugo de naranja 100% natural recién exprimido"
+        categoria:
+          type: string
+          example: "Bebidas"
+        precio:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 25.00
+        stock:
+          type: integer
+          minimum: 0
+          default: 0
+          example: 50
+        alergenos:
+          type: array
+          items:
+            type: string
+          example: []
+
+    ProductoUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: "Jugo de naranja orgánico"
+        descripcion:
+          type: string
+          example: "Jugo de naranja 100% orgánico"
+        precio:
+          type: number
+          format: float
+          example: 30.00
+        stock:
+          type: integer
+          example: 45
+        disponible:
+          type: boolean
+          example: true
+
+    ProductoListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 85
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Producto'
+
+    # ========================================
+    # ESQUEMAS DE TRANSACCIONES TIENDA
+    # ========================================
+    Transaccion:
+      type: object
+      description: Transacción de compra en tienda escolar
+      properties:
+        id:
+          type: string
+          example: "trx_560012"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        alumno:
+          $ref: '#/components/schemas/UsuarioBasico'
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productoId:
+                type: string
+                example: "prd_44005"
+              nombreProducto:
+                type: string
+                example: "Sándwich de jamón"
+              cantidad:
+                type: integer
+                example: 1
+              precioUnitario:
+                type: number
+                example: 35.00
+              subtotal:
+                type: number
+                example: 35.00
+        total:
+          type: number
+          format: float
+          example: 35.00
+        moneda:
+          type: string
+          example: "MXN"
+        estado:
+          type: string
+          enum: [exitoso, rechazado, cancelado]
+          example: "exitoso"
+        fechaTransaccion:
+          type: string
+          format: date-time
+          example: "2025-11-02T10:45:00Z"
+
+    TransaccionCreate:
+      type: object
+      required:
+        - alumnoId
+        - items
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - productoId
+              - cantidad
+            properties:
+              productoId:
+                type: string
+                example: "prd_44005"
+              cantidad:
+                type: integer
+                minimum: 1
+                example: 2
+
+    TransaccionListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 142
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaccion'
+
+    # ========================================
+    # ESQUEMAS DE RESTRICCIONES
+    # ========================================
+    Restriccion:
+      type: object
+      description: Restricción de compra de producto para alumno
+      properties:
+        id:
+          type: string
+          example: "res_88015"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        productoId:
+          type: string
+          example: "prd_44005"
+        producto:
+          $ref: '#/components/schemas/Producto'
+        motivo:
+          type: string
+          example: "Alergia al gluten"
+        tipoRestriccion:
+          type: string
+          enum: [alergia, dieta, medica, familiar]
+          example: "alergia"
+        fechaCreacion:
+          type: string
+          format: date-time
+          example: "2025-10-01T08:00:00Z"
+
+    RestriccionCreate:
+      type: object
+      required:
+        - alumnoId
+        - productoId
+        - tipoRestriccion
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        productoId:
+          type: string
+          example: "prd_44005"
+        motivo:
+          type: string
+          maxLength: 500
+          example: "Intolerancia a la lactosa diagnosticada"
+        tipoRestriccion:
+          type: string
+          enum: [alergia, dieta, medica, familiar]
+          example: "medica"
+
+    RestriccionListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 5
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Restriccion'
+
+    # ========================================
+    # ESQUEMAS DE ASISTENTE IA
+    # ========================================
+    ConsultaAsistente:
+      type: object
+      required:
+        - pregunta
+      properties:
+        pregunta:
+          type: string
+          minLength: 5
+          maxLength: 1000
+          example: "¿Cuáles son las tareas pendientes de mi hijo?"
+        contexto:
+          type: object
+          description: Contexto adicional para la consulta
+          properties:
+            alumnoId:
+              type: string
+              example: "usr_alumno01"
+
+    RespuestaAsistente:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "ast_9901"
+        respuesta:
+          type: string
+          example: "Tu hijo tiene 3 tareas pendientes: Matemáticas para el 5 de nov..."
+        confianza:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.95
+        sugerencias:
+          type: array
+          items:
+            type: string
+          example:
+            - "¿Quieres ver el detalle de cada tarea?"
+            - "¿Necesitas ayuda con alguna materia?"
+        fecha:
+          type: string
+          format: date-time
+          example: "2025-11-02T14:30:00Z"
+
+    AnalisisAlumno:
+      type: object
+      description: Análisis predictivo del desempeño del alumno
+      properties:
+        id:
+          type: string
+          example: "anl_7701"
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        nivelParticipacion:
+          type: string
+          enum: [bajo, medio, alto]
+          example: "alto"
+        riesgoDesercion:
+          type: string
+          enum: [bajo, medio, alto]
+          example: "bajo"
+        promedioGeneral:
+          type: number
+          format: float
+          example: 92.5
+        areasOportunidad:
+          type: array
+          items:
+            type: string
+          example:
+            - "Mejorar asistencia en clases matutinas"
+            - "Fortalecer hábitos de estudio en matemáticas"
+        recomendaciones:
+          type: array
+          items:
+            type: string
+          example:
+            - "Establecer horario fijo de estudio en casa"
+            - "Revisar tareas diariamente"
+        fechaAnalisis:
+          type: string
+          format: date-time
+          example: "2025-11-02T00:00:00Z"
+
+    # ========================================
+    # ESQUEMAS DE REPORTES
+    # ========================================
+    ReporteAcademico:
+      type: object
+      description: Reporte académico del alumno
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        alumno:
+          $ref: '#/components/schemas/UsuarioBasico'
+        periodo:
+          type: string
+          example: "2025-1"
+        promedioGeneral:
+          type: number
+          format: float
+          example: 89.5
+        materias:
+          type: array
+          items:
+            type: object
+            properties:
+              nombre:
+                type: string
+                example: "Matemáticas"
+              calificacion:
+                type: number
+                example: 92.0
+              tareasEntregadas:
+                type: integer
+                example: 18
+              tareasTotal:
+                type: integer
+                example: 20
+              asistencias:
+                type: integer
+                example: 38
+              asistenciasTotal:
+                type: integer
+                example: 40
+        observaciones:
+          type: string
+          example: "Alumno con excelente desempeño y participación"
+        fechaGeneracion:
+          type: string
+          format: date-time
+          example: "2025-11-02T16:00:00Z"
+
+    ReporteFinanciero:
+      type: object
+      description: Reporte financiero del alumno
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        alumno:
+          $ref: '#/components/schemas/UsuarioBasico'
+        periodo:
+          type: object
+          properties:
+            inicio:
+              type: string
+              format: date
+              example: "2025-01-01"
+            fin:
+              type: string
+              format: date
+              example: "2025-11-02"
+        totalPagado:
+          type: number
+          format: float
+          example: 35000.00
+        adeudoPendiente:
+          type: number
+          format: float
+          example: 3500.00
+        proximoVencimiento:
+          type: string
+          format: date
+          example: "2025-11-05"
+        detallesCuotas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cuota'
+        fechaGeneracion:
+          type: string
+          format: date-time
+          example: "2025-11-02T16:00:00Z"
+
+    ReporteConsumos:
+      type: object
+      description: Reporte de consumos en tienda escolar
+      properties:
+        alumnoId:
+          type: string
+          example: "usr_alumno01"
+        alumno:
+          $ref: '#/components/schemas/UsuarioBasico'
+        periodo:
+          type: object
+          properties:
+            inicio:
+              type: string
+              format: date
+              example: "2025-10-01"
+            fin:
+              type: string
+              format: date
+              example: "2025-11-02"
+        totalGastado:
+          type: number
+          format: float
+          example: 825.50
+        numeroTransacciones:
+          type: integer
+          example: 34
+        productosMasComprados:
+          type: array
+          items:
+            type: object
+            properties:
+              producto:
+                type: string
+                example: "Sándwich de jamón"
+              cantidad:
+                type: integer
+                example: 12
+              totalGastado:
+                type: number
+                example: 420.00
+        promedioGastoDiario:
+          type: number
+          format: float
+          example: 25.80
+        fechaGeneracion:
+          type: string
+          format: date-time
+          example: "2025-11-02T16:00:00Z"
+
+    # ========================================
+    # ESQUEMA DE ERROR
+    # ========================================
+    Error:
+      type: object
+      description: Estructura estándar de error de la API
+      properties:
+        codigo:
+          type: string
+          example: "BAD_REQUEST"
+        mensaje:
+          type: string
+          example: "La solicitud contiene datos inválidos"
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+                example: "email"
+              error:
+                type: string
+                example: "Formato de email inválido"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-02T14:30:00Z"
+
+# ========================================
+# SEGURIDAD GLOBAL
+# ========================================
+security:
+  - BearerAuth: []

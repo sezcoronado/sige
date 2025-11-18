@@ -9,6 +9,7 @@ export interface Tarea {
   docenteId: string;
   fechaAsignacion: string;
   fechaEntrega: string;
+  fechaCalificacion?: string;
   estado: 'pendiente' | 'entregada' | 'calificada';
   calificacion: number | null;
   comentarioDocente: string | null;
