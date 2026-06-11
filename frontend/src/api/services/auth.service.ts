@@ -26,6 +26,27 @@ export interface Usuario {
   alumnoAsociado?: string;
 }
 
+export interface ChangePasswordRequest {
+  contrasenaActual: string;
+  contrasenaNueva: string;
+  contrasenaConfirmacion: string;
+}
+
+export interface ChangePasswordResponse {
+  mensaje: string;
+}
+
+/** Detalle de validación devuelto por el backend ({ campo, error }). */
+export interface ValidationDetail {
+  campo: string;
+  error: string;
+}
+
+/** Error de API que conserva los detalles de validación por campo. */
+export interface ApiError extends Error {
+  detalles?: ValidationDetail[];
+}
+
 class AuthService {
   /**
    * Iniciar sesión
@@ -40,6 +61,20 @@ class AuthService {
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('usuario', JSON.stringify(usuario));
       
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Cambiar contraseña con verificación de seguridad.
+   * Requiere la contraseña actual (re-autenticación) y una contraseña nueva
+   * que cumpla la política de seguridad.
+   */
+  async changePassword(payload: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    try {
+      const response = await apiClient.post<ChangePasswordResponse>('/auth/change-password', payload);
       return response.data;
     } catch (error: any) {
       throw this.handleError(error);
@@ -120,11 +155,16 @@ class AuthService {
   /**
    * Manejo centralizado de errores
    */
-  private handleError(error: any): Error {
+  private handleError(error: any): ApiError {
     if (error.response) {
       // Error de respuesta del servidor
-      const mensaje = error.response.data?.mensaje || 'Error en la autenticación';
-      return new Error(mensaje);
+      const data = error.response.data;
+      const mensaje = data?.mensaje || 'Error en la autenticación';
+      const apiError: ApiError = new Error(mensaje);
+      if (Array.isArray(data?.detalles) && data.detalles.length > 0) {
+        apiError.detalles = data.detalles;
+      }
+      return apiError;
     } else if (error.request) {
       // Error de red
       return new Error('No se pudo conectar con el servidor');

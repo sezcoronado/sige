@@ -6,6 +6,7 @@ import authService from './api/services/auth.service';
 // Páginas
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import CarteraPage from './pages/CarteraPage';
 import TiendaPage from './pages/TiendaPage';
 import TareasPage from './pages/TareasPage';
@@ -37,6 +38,14 @@ function App() {
           element={
             <PrivateRoute>
               <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cambiar-contrasena"
+          element={
+            <PrivateRoute>
+              <ChangePasswordPage />
             </PrivateRoute>
           }
         />

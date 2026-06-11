@@ -127,6 +127,9 @@ const DashboardPage: React.FC = () => {
                 <p className="text-sm font-medium text-gray-900">{usuario.nombre}</p>
                 <p className="text-xs text-gray-500 capitalize">{usuario.rol}</p>
               </div>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/cambiar-contrasena')}>
+                Cambiar Contraseña
+              </Button>
               <Button variant="secondary" size="sm" onClick={handleLogout}>
                 Cerrar Sesión
               </Button>
