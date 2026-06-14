@@ -27,6 +27,7 @@ const MensajesPage: React.FC = () => {
     destinatario: '',
     asunto: '',
     contenido: '',
+    manualDestino: '',
   });
 
   useEffect(() => {
@@ -68,27 +69,60 @@ const MensajesPage: React.FC = () => {
     try {
       // En producción, buscar el ID del destinatario por email/nombre
       // Por ahora usamos IDs mock
-      const destinatarioMap: { [key: string]: string | undefined } = {
-        'padres': 'mthr_alumno01', // ID del usuario 'padres'
-        'docente': 'tchr_12345',   // ID del docente
-        'alumno': 'stdnt_alumno01',  // ID del alumno
+      const destinatarioMap: { [key: string]: string[] | undefined } = {
+        'padres': ['mthr_alumno01', 'mthr_alumno02'], // ID del usuario 'padres'
+        'docente': ['tchr_12345'],   // ID del docente
+        'alumno': ['stdnt_alumno01'],  // ID del alumno
       };
 
-      const destId = destinatarioMap[nuevoMensaje.destinatario];
-      if (!destId) throw new Error('Destinatario inválido');
-      await mensajesService.enviarMensaje({
-        destinatariosIds: [destId],
-        asunto: nuevoMensaje.asunto,
-        contenido: nuevoMensaje.contenido,
-      });
+      let destinatarios: string[] = [];
+
+      if (nuevoMensaje.destinatario === 'manual') {
+        const manual = nuevoMensaje.manualDestino?.trim();
+        if (!manual) throw new Error('Debe escribir un destinatario manual.');
+
+        // Validar manual destination
+        const allIds = Object.values(destinatarioMap).flat();
+        if (!allIds.includes(manual)) {
+          throw new Error('El destinatario especificado no existe.');
+        }
+
+        destinatarios = [manual];
+      } else {
+        destinatarios = destinatarioMap[nuevoMensaje.destinatario] || [];
+        if (!destinatarios || destinatarios.length === 0) {
+          throw new Error('Destinatario inválido');
+        }
+      }
+
+      // Obtener el ID del usuario actual desde localStorage
+      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+      // Filtrar tu propio ID (evita enviarte el mensaje a ti mismo)
+      const destinatariosFiltrados = destinatarios.filter(
+        id => id !== usuario.id
+      );
+
+      if (destinatariosFiltrados.length === 0) {
+        throw new Error('No hay destinatarios válidos (no puedes enviarte mensajes a ti mismo)');
+      }
+
+      // Enviar a cada destinatario individualmente
+      for (const destId of destinatariosFiltrados) {
+        await mensajesService.enviarMensaje({
+          destinatariosIds: [destId], // backend espera array
+          asunto: nuevoMensaje.asunto,
+          contenido: nuevoMensaje.contenido,
+        });
+      }
 
       setSuccess('Mensaje enviado exitosamente');
       setMostrarNuevo(false);
-      setNuevoMensaje({ destinatario: '', asunto: '', contenido: '' });
+      setNuevoMensaje({ destinatario: '', asunto: '', contenido: '', manualDestino: ''});
       if (tipo === 'enviados') {
         cargarMensajes();
       }
     } catch (err: any) {
+      console.error('Error al enviar mensaje:', err);
       setError(err.message);
     } finally {
       setEnviando(false);
@@ -261,7 +295,21 @@ const MensajesPage: React.FC = () => {
                   <option value="padres">Padres</option>
                   <option value="docente">Docente</option>
                   <option value="alumno">Alumno</option>
+                  <option value="manual">Otro (escribir manualmente)</option>
                 </select>
+
+                {nuevoMensaje.destinatario === 'manual' && (
+                <input
+                  type="text"
+                  placeholder="Escribe el ID (correo del destinatario esta en desarrollo)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={nuevoMensaje.manualDestino || ''}
+                  onChange={(e) =>
+                    setNuevoMensaje({ ...nuevoMensaje, manualDestino: e.target.value })
+                  }
+                  required
+                />
+              )}
               </div>
 
               <Input
