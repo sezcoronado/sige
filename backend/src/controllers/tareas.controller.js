@@ -107,6 +107,15 @@ let MOCK_TAREAS = [
   },
 ];
 
+// Normalizar tareas mock con los campos de publicación, criterios y evaluación.
+// Las tareas precargadas se consideran ya publicadas y visibles en el portal.
+MOCK_TAREAS = MOCK_TAREAS.map(t => ({
+  criterios: 'Se evaluará claridad, orden, ortografía y cumplimiento de los requisitos solicitados.',
+  evaluacion: 'Calificación de 0 a 100 puntos. La entrega tardía o no realizada se califica con 0.',
+  publicada: true,
+  ...t,
+}));
+
 // Mock de Entregas (Submissions) - Esta variable se había eliminado por error.
 let MOCK_ENTREGAS = [
   // Entregas Alumno 1 (Emma Hernandez)
@@ -183,7 +192,8 @@ const getTareas = async (req, res, next) => {
         throw ErrorFactory.badRequest('El parámetro alumnoId es requerido');
       }
 
-      tareasResult = MOCK_TAREAS.map(tarea => {
+      // Padres y alumnos solo ven las tareas publicadas en el portal.
+      tareasResult = MOCK_TAREAS.filter(tarea => tarea.publicada !== false).map(tarea => {
         const entrega = MOCK_ENTREGAS.find(e => e.tareaId === tarea.id && e.alumnoId === targetAlumnoId);
         const tareaFinal = { ...tarea, ...(entrega || {}) };
 
@@ -243,6 +253,158 @@ const getTareaById = async (req, res, next) => {
       ...(entrega || { estado: 'pendiente' })
     });
 
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Crear una nueva tarea (docente)
+ */
+const crearTarea = async (req, res, next) => {
+  try {
+    const {
+      titulo,
+      descripcion,
+      materia,
+      fechaEntrega,
+      fechaCalificacion,
+      criterios,
+      evaluacion,
+      publicada,
+    } = req.body;
+
+    // Validar campos requeridos
+    const detalles = [];
+    if (!titulo || !titulo.trim()) detalles.push({ campo: 'titulo', error: 'Campo requerido' });
+    if (!descripcion || !descripcion.trim()) detalles.push({ campo: 'descripcion', error: 'Campo requerido' });
+    if (!fechaEntrega) detalles.push({ campo: 'fechaEntrega', error: 'Campo requerido' });
+    if (detalles.length > 0) {
+      throw ErrorFactory.badRequest('Datos incompletos', detalles);
+    }
+
+    // Validar fecha de entrega
+    if (isNaN(new Date(fechaEntrega).getTime())) {
+      throw ErrorFactory.badRequest('La fecha de entrega no es válida', [
+        { campo: 'fechaEntrega', error: 'Fecha inválida' }
+      ]);
+    }
+
+    const nuevaTarea = {
+      id: `tsk_${Date.now()}`,
+      titulo: titulo.trim(),
+      descripcion: descripcion.trim(),
+      materia: materia ? materia.trim() : 'General',
+      docenteId: req.user.id,
+      fechaAsignacion: new Date().toISOString(),
+      fechaEntrega: new Date(fechaEntrega).toISOString(),
+      fechaCalificacion: fechaCalificacion ? new Date(fechaCalificacion).toISOString() : null,
+      criterios: criterios ? criterios.trim() : null,
+      evaluacion: evaluacion ? evaluacion.trim() : null,
+      // Por defecto se crea como borrador; el docente decide publicarla.
+      publicada: publicada === true || publicada === 'true',
+    };
+
+    MOCK_TAREAS.push(nuevaTarea);
+
+    res.status(201).json({
+      mensaje: nuevaTarea.publicada
+        ? 'Tarea creada y publicada exitosamente'
+        : 'Tarea creada como borrador',
+      tarea: nuevaTarea,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Actualizar una tarea existente (docente)
+ */
+const actualizarTarea = async (req, res, next) => {
+  try {
+    const { tareaId } = req.params;
+    const tarea = MOCK_TAREAS.find(t => t.id === tareaId);
+
+    if (!tarea) {
+      throw ErrorFactory.notFound('Tarea');
+    }
+
+    const {
+      titulo,
+      descripcion,
+      materia,
+      fechaEntrega,
+      fechaCalificacion,
+      criterios,
+      evaluacion,
+      publicada,
+    } = req.body;
+
+    // Actualizar solo los campos enviados
+    if (titulo !== undefined) {
+      if (!titulo.trim()) {
+        throw ErrorFactory.badRequest('El título no puede estar vacío', [
+          { campo: 'titulo', error: 'Campo requerido' }
+        ]);
+      }
+      tarea.titulo = titulo.trim();
+    }
+    if (descripcion !== undefined) {
+      if (!descripcion.trim()) {
+        throw ErrorFactory.badRequest('La descripción no puede estar vacía', [
+          { campo: 'descripcion', error: 'Campo requerido' }
+        ]);
+      }
+      tarea.descripcion = descripcion.trim();
+    }
+    if (materia !== undefined) tarea.materia = materia ? materia.trim() : 'General';
+    if (fechaEntrega !== undefined) {
+      if (isNaN(new Date(fechaEntrega).getTime())) {
+        throw ErrorFactory.badRequest('La fecha de entrega no es válida', [
+          { campo: 'fechaEntrega', error: 'Fecha inválida' }
+        ]);
+      }
+      tarea.fechaEntrega = new Date(fechaEntrega).toISOString();
+    }
+    if (fechaCalificacion !== undefined) {
+      tarea.fechaCalificacion = fechaCalificacion ? new Date(fechaCalificacion).toISOString() : null;
+    }
+    if (criterios !== undefined) tarea.criterios = criterios ? criterios.trim() : null;
+    if (evaluacion !== undefined) tarea.evaluacion = evaluacion ? evaluacion.trim() : null;
+    if (publicada !== undefined) tarea.publicada = publicada === true || publicada === 'true';
+
+    res.status(200).json({
+      mensaje: 'Tarea actualizada exitosamente',
+      tarea,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Publicar u ocultar una tarea en el portal (docente)
+ */
+const publicarTarea = async (req, res, next) => {
+  try {
+    const { tareaId } = req.params;
+    const { publicada } = req.body;
+    const tarea = MOCK_TAREAS.find(t => t.id === tareaId);
+
+    if (!tarea) {
+      throw ErrorFactory.notFound('Tarea');
+    }
+
+    // Si no se especifica, se publica por defecto
+    tarea.publicada = publicada === undefined ? true : (publicada === true || publicada === 'true');
+
+    res.status(200).json({
+      mensaje: tarea.publicada
+        ? 'Tarea publicada. Ya es visible para padres y alumnos.'
+        : 'Tarea ocultada del portal.',
+      tarea,
+    });
   } catch (error) {
     next(error);
   }
@@ -358,6 +520,9 @@ const calificarTarea = async (req, res, next) => {
 module.exports = {
   getTareas,
   getTareaById,
+  crearTarea,
+  actualizarTarea,
+  publicarTarea,
   entregarTarea,
   calificarTarea
 };

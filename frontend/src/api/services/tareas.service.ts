@@ -10,11 +10,31 @@ export interface Tarea {
   fechaAsignacion: string;
   fechaEntrega: string;
   fechaCalificacion?: string;
+  criterios?: string | null;
+  evaluacion?: string | null;
+  publicada?: boolean;
   estado: 'pendiente' | 'entregada' | 'calificada';
   calificacion: number | null;
   comentarioDocente: string | null;
   archivoEntrega: string | null;
   fechaEntregaAlumno: string | null;
+  alumno?: { id: string; nombre: string };
+}
+
+export interface TareaInput {
+  titulo: string;
+  descripcion: string;
+  materia?: string;
+  fechaEntrega: string;
+  fechaCalificacion?: string | null;
+  criterios?: string | null;
+  evaluacion?: string | null;
+  publicada?: boolean;
+}
+
+export interface TareaMutationResponse {
+  mensaje: string;
+  tarea: Tarea;
 }
 
 export interface TareasResponse {
@@ -83,6 +103,51 @@ class TareasService {
   async getTareaById(tareaId: string): Promise<Tarea> {
     try {
       const response = await apiClient.get<Tarea>(`/tareas/${tareaId}`);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Crear una nueva tarea (docente)
+   */
+  async crearTarea(data: TareaInput): Promise<TareaMutationResponse> {
+    try {
+      const response = await apiClient.post<TareaMutationResponse>('/tareas', data);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Editar una tarea existente (docente)
+   */
+  async actualizarTarea(
+    tareaId: string,
+    data: Partial<TareaInput>
+  ): Promise<TareaMutationResponse> {
+    try {
+      const response = await apiClient.put<TareaMutationResponse>(`/tareas/${tareaId}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Publicar u ocultar una tarea en el portal (docente)
+   */
+  async publicarTarea(
+    tareaId: string,
+    publicada: boolean
+  ): Promise<TareaMutationResponse> {
+    try {
+      const response = await apiClient.patch<TareaMutationResponse>(
+        `/tareas/${tareaId}/publicar`,
+        { publicada }
+      );
       return response.data;
     } catch (error: any) {
       throw this.handleError(error);
