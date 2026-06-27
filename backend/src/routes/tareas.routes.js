@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const tareasController = require('../controllers/tareas.controller');
 const { authenticateToken, authorize } = require('../middlewares/auth.middleware');
+const noCache = require('../middlewares/noCache.middleware');
 
 // Configuración de Multer para subida de archivos
 const storage = multer.diskStorage({
@@ -51,7 +52,20 @@ const upload = multer({
 router.get(
   '/',
   authenticateToken,
+  noCache,
   tareasController.getTareas
+);
+
+/**
+ * @route   POST /api/v1/tareas
+ * @desc    Crear una nueva tarea
+ * @access  Private (docente)
+ */
+router.post(
+  '/',
+  authenticateToken,
+  authorize('docente'),
+  tareasController.crearTarea
 );
 
 /**
@@ -62,7 +76,32 @@ router.get(
 router.get(
   '/:tareaId',
   authenticateToken,
+  noCache,
   tareasController.getTareaById
+);
+
+/**
+ * @route   PUT /api/v1/tareas/:tareaId
+ * @desc    Editar una tarea existente
+ * @access  Private (docente)
+ */
+router.put(
+  '/:tareaId',
+  authenticateToken,
+  authorize('docente'),
+  tareasController.actualizarTarea
+);
+
+/**
+ * @route   PATCH /api/v1/tareas/:tareaId/publicar
+ * @desc    Publicar u ocultar una tarea en el portal
+ * @access  Private (docente)
+ */
+router.patch(
+  '/:tareaId/publicar',
+  authenticateToken,
+  authorize('docente'),
+  tareasController.publicarTarea
 );
 
 /**

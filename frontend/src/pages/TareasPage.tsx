@@ -46,6 +46,111 @@ const TareasPage: React.FC = () => {
   const [comentario, setComentario] = useState('');
   const [entregando, setEntregando] = useState(false);
 
+  // Modal de creación/edición (docente)
+  const formularioInicial = {
+    titulo: '',
+    descripcion: '',
+    materia: '',
+    fechaEntrega: '',
+    fechaCalificacion: '',
+    criterios: '',
+    evaluacion: '',
+    publicada: false,
+  };
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [tareaEditando, setTareaEditando] = useState<Tarea | null>(null);
+  const [form, setForm] = useState(formularioInicial);
+  const [guardando, setGuardando] = useState(false);
+
+  // Convierte una fecha ISO a un valor válido para <input type="datetime-local">
+  const toLocalInput = (iso?: string | null): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const abrirCrear = () => {
+    setTareaEditando(null);
+    setForm(formularioInicial);
+    setMostrarFormulario(true);
+  };
+
+  const abrirEditar = (tarea: Tarea) => {
+    setTareaEditando(tarea);
+    setForm({
+      titulo: tarea.titulo || '',
+      descripcion: tarea.descripcion || '',
+      materia: tarea.materia || '',
+      fechaEntrega: toLocalInput(tarea.fechaEntrega),
+      fechaCalificacion: toLocalInput(tarea.fechaCalificacion),
+      criterios: tarea.criterios || '',
+      evaluacion: tarea.evaluacion || '',
+      publicada: tarea.publicada !== false,
+    });
+    setMostrarFormulario(true);
+  };
+
+  const handleGuardarTarea = async () => {
+    if (!form.titulo.trim() || !form.descripcion.trim() || !form.fechaEntrega) {
+      setError('Título, descripción y fecha de entrega son obligatorios');
+      return;
+    }
+    setGuardando(true);
+    setError(null);
+    try {
+      const payload = {
+        titulo: form.titulo.trim(),
+        descripcion: form.descripcion.trim(),
+        materia: form.materia.trim() || undefined,
+        fechaEntrega: form.fechaEntrega,
+        fechaCalificacion: form.fechaCalificacion || null,
+        criterios: form.criterios.trim() || null,
+        evaluacion: form.evaluacion.trim() || null,
+        publicada: form.publicada,
+      };
+
+      if (tareaEditando) {
+        await tareasService.actualizarTarea(tareaEditando.id, payload);
+        setSuccess('Tarea actualizada. Los cambios ya son visibles en el portal.');
+      } else {
+        await tareasService.crearTarea(payload);
+        setSuccess(
+          form.publicada
+            ? 'Tarea creada y publicada exitosamente.'
+            : 'Tarea creada como borrador. Publícala para que padres y alumnos la vean.'
+        );
+      }
+
+      setMostrarFormulario(false);
+      setTareaEditando(null);
+      setForm(formularioInicial);
+      cargarTareas();
+      fetchTaskStats();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const handlePublicar = async (tarea: Tarea, publicada: boolean) => {
+    setError(null);
+    try {
+      await tareasService.publicarTarea(tarea.id, publicada);
+      setSuccess(
+        publicada
+          ? 'Tarea publicada. Ya es visible para padres y alumnos.'
+          : 'Tarea ocultada del portal.'
+      );
+      cargarTareas();
+      fetchTaskStats();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   useEffect(() => {
     const usuario = authService.getUsuarioLocal();
     if (!usuario) {
@@ -190,6 +295,11 @@ const TareasPage: React.FC = () => {
 
   const usuario = authService.getUsuarioLocal();
 
+  // Para el docente, deduplicar las tareas (el listado las expande por alumno)
+  const tareasUnicas = usuario?.rol === 'docente'
+    ? Array.from(new Map(tareas.map(t => [t.id, t])).values())
+    : [];
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -197,9 +307,16 @@ const TareasPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Tareas Académicas</h1>
-            <Button variant="secondary" onClick={() => navigate('/dashboard')}>
-              Volver
-            </Button>
+            <div className="flex gap-3">
+              {usuario?.rol === 'docente' && (
+                <Button variant="primary" onClick={abrirCrear}>
+                  + Crear tarea
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => navigate('/dashboard')}>
+                Volver
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -253,6 +370,62 @@ const TareasPage: React.FC = () => {
                   </div>
                 ) : <p className="text-gray-600">No hay tareas para mostrar estadísticas.</p>}
               </>
+            )}
+          </Card>
+        )}
+
+        {/* Panel de gestión de tareas (solo docente) */}
+        {usuario?.rol === 'docente' && (
+          <Card className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Gestión de Tareas</h2>
+              <Button variant="primary" size="sm" onClick={abrirCrear}>
+                + Crear tarea
+              </Button>
+            </div>
+            {tareasUnicas.length === 0 ? (
+              <p className="text-gray-600">Aún no has creado tareas. Usa "Crear tarea" para publicar la primera.</p>
+            ) : (
+              <div className="space-y-3">
+                {tareasUnicas.map(tarea => (
+                  <div
+                    key={tarea.id}
+                    className="flex flex-wrap justify-between items-center gap-3 border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">{tarea.titulo}</h3>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded font-medium ${
+                            tarea.publicada !== false
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {tarea.publicada !== false ? 'Publicada' : 'Borrador'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {tarea.materia} · Entrega: {new Date(tarea.fechaEntrega).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => abrirEditar(tarea)}>
+                        Editar
+                      </Button>
+                      {tarea.publicada !== false ? (
+                        <Button variant="secondary" size="sm" onClick={() => handlePublicar(tarea, false)}>
+                          Ocultar
+                        </Button>
+                      ) : (
+                        <Button variant="primary" size="sm" onClick={() => handlePublicar(tarea, true)}>
+                          Publicar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </Card>
         )}
@@ -320,6 +493,20 @@ const TareasPage: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">{tarea.descripcion}</p>
+                    {(tarea.criterios || tarea.evaluacion) && (
+                      <div className="mb-3 space-y-1 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                        {tarea.criterios && (
+                          <p className="text-sm text-gray-700">
+                            <span className="font-semibold">Criterios:</span> {tarea.criterios}
+                          </p>
+                        )}
+                        {tarea.evaluacion && (
+                          <p className="text-sm text-gray-700">
+                            <span className="font-semibold">Evaluación:</span> {tarea.evaluacion}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,6 +546,130 @@ const TareasPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Modal de Creación / Edición (docente) */}
+      {mostrarFormulario && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <Card
+            className="max-w-2xl w-full my-8"
+            title={tareaEditando ? 'Editar tarea' : 'Crear nueva tarea'}
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                <input
+                  type="text"
+                  value={form.titulo}
+                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej. Investigación sobre el sistema solar"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                <textarea
+                  value={form.descripcion}
+                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Describe el contenido y las instrucciones de la tarea..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Materia</label>
+                <input
+                  type="text"
+                  value={form.materia}
+                  onChange={(e) => setForm({ ...form, materia: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej. Ciencias Naturales"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega *</label>
+                  <input
+                    type="datetime-local"
+                    value={form.fechaEntrega}
+                    onChange={(e) => setForm({ ...form, fechaEntrega: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de calificación</label>
+                  <input
+                    type="datetime-local"
+                    value={form.fechaCalificacion}
+                    onChange={(e) => setForm({ ...form, fechaCalificacion: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Criterios</label>
+                <textarea
+                  value={form.criterios}
+                  onChange={(e) => setForm({ ...form, criterios: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej. Claridad, orden, ortografía y cumplimiento de los requisitos..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Evaluación</label>
+                <textarea
+                  value={form.evaluacion}
+                  onChange={(e) => setForm({ ...form, evaluacion: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej. Calificación de 0 a 100 puntos según rúbrica..."
+                />
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.publicada}
+                  onChange={(e) => setForm({ ...form, publicada: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">
+                  Publicar (visible de inmediato para padres y alumnos)
+                </span>
+              </label>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => {
+                    setMostrarFormulario(false);
+                    setTareaEditando(null);
+                    setForm(formularioInicial);
+                  }}
+                  disabled={guardando}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={handleGuardarTarea}
+                  loading={guardando}
+                  disabled={guardando}
+                >
+                  {guardando ? 'Guardando...' : tareaEditando ? 'Guardar cambios' : 'Crear tarea'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Modal de Entrega */}
       {tareaSeleccionada && (
